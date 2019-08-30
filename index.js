@@ -22,12 +22,6 @@ if (files.length === 0) {
   process.exit(1);
 }
 
-if (!program.image && (program.width || program.grayscale)) {
-  console.warn(
-    "[warning] `--no-image` specified, ignoring `--grayscale` and `--width`"
-  );
-}
-
 for (const file of files) {
   fs.readFile(file, (err, data) => {
     if (err) {
@@ -84,21 +78,46 @@ function generateImage(data, file) {
     }
   }
 
+  const prefix = file.split(".")[0];
+  const row = [prefix];
+  for (let i = 0; i < imageData.length; i += 4) {
+    if (program.grayscale) {
+      if (imageData[i] === 255) {
+        row.push(0);
+      } else if (imageData[i] === 127) {
+        row.push(0.5);
+      } else {
+        row.push(1);
+      }
+    } else {
+      row.push(`${imageData[i]},${imageData[i + 1]},${imageData[i] + 2}`);
+    }
+  }
+
+  const valueFile = program.width
+    ? `${prefix}.${program.width}x${program.width}.tsv`
+    : `${prefix}.tsv`;
+
+  fs.writeFile(valueFile, row.join("\t"), "utf8", err => {
+    if (err) {
+      throw err;
+    }
+  });
+
   if (program.image) {
     const img = sharp(Buffer.from(imageData), {
       raw: { width: n, height: n, channels: 4 }
     });
 
-    const prefix = file.split(".")[0];
-    const outfile = program.width
+    const imageFile = program.width
       ? `${prefix}.${program.width}x${program.width}.png`
       : `${prefix}.png`;
 
-    img.toFile(outfile, err => {
+    img.toFile(imageFile, err => {
       if (err) {
         console.error(err);
       } else {
-        console.log(`[done] ${outfile}`);
+        console.log(`[done] ${imageFile}`);
       }
     });
   }
