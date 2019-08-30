@@ -1,19 +1,25 @@
+#! /usr/bin/env node
+
+const program = require("commander");
 const fs = require("fs");
 const hilbertCurve = require("hilbert-curve");
 const pako = require("pako");
-const basename = require("path").basename;
 const sharp = require("sharp");
 
-// FIXME: configurable
-const IMAGE_RESIZE_WIDTH = 128;
+program
+  .option("-g, --grayscale", "grayscale image")
+  .option("-w, --width <number>", "width of resized image", myParseInt)
+  .arguments("<files...>");
 
-if (process.argv.length === 2) {
-  console.log(
-    `Usage: ${basename(process.argv[1])} <file1.gz> [<file2.gz>, ...]`
-  );
+program.parse(process.argv);
+const files = program.args;
+
+if (files.length === 0) {
+  program.outputHelp();
+  process.exit(1);
 }
 
-for (const file of process.argv.slice(2)) {
+for (const file of files) {
   fs.readFile(file, (err, data) => {
     if (err) {
       throw err;
@@ -51,32 +57,32 @@ function generateImage(data, file) {
   });
 
   const prefix = file.split(".")[0];
+  const outfile = program.width
+    ? `${prefix}.${program.width}x${program.width}.png`
+    : `${prefix}.png`;
 
-  img.toFile(`${prefix}.png`, err => {
+  if (program.width) {
+    img.resize({ width: program.width });
+  }
+
+  if (program.grayscale) {
+    img.greyscale();
+  }
+
+  img.toFile(outfile, err => {
     if (err) {
       console.error(err);
     } else {
-      console.log(`[done] ${prefix}.png`);
+      console.log(`[done] ${outfile}`);
     }
   });
-
-  img
-    .resize({ width: IMAGE_RESIZE_WIDTH })
-    .toFile(
-      `${prefix}.${IMAGE_RESIZE_WIDTH}x${IMAGE_RESIZE_WIDTH}.png`,
-      err => {
-        if (err) {
-          console.error(err);
-        } else {
-          console.log(
-            `[done] ${prefix}.${IMAGE_RESIZE_WIDTH}x${IMAGE_RESIZE_WIDTH}.png`
-          );
-        }
-      }
-    );
 }
 
 function offset(column, row, channel, width) {
   const channels = "rgba";
   return row * (width * 4) + column * 4 + channels.indexOf(channel);
+}
+
+function myParseInt(x) {
+  return Number.parseInt(x, 10);
 }
