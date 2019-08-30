@@ -48,9 +48,12 @@ function generateImage(data, file) {
     genotypes = parsed;
   } else {
     binned = new Uint8Array(program.width * program.width);
-    binSize = Math.ceil(parsed.length / binned.length);
+    binSize = parsed.length / binned.length;
     for (let i = 0; i < binned.length; i += 1) {
-      const chunk = parsed.slice(i * binSize, (i + 1) * binSize);
+      const chunk = parsed.slice(
+        Math.ceil(i * binSize),
+        Math.floor((i + 1) * binSize)
+      );
       if (chunk.length > 0) {
         // TODO allow additional strategies
         binned[i] = Math.max(...chunk);
