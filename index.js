@@ -8,7 +8,10 @@ const sharp = require("sharp");
 
 program
   .option("-g, --grayscale", "grayscale image")
-  .option("-w, --width <number>", "width of resized image", myParseInt)
+  .option("-w, --width <number>", "width of resized image", x =>
+    Number.parseInt(x, 10)
+  )
+  .option("--no-image", "output raw values, no image")
   .arguments("<files...>");
 
 program.parse(process.argv);
@@ -17,6 +20,12 @@ const files = program.args;
 if (files.length === 0) {
   program.outputHelp();
   process.exit(1);
+}
+
+if (!program.image && (program.width || program.grayscale)) {
+  console.warn(
+    "[warning] `--no-image` specified, ignoring `--grayscale` and `--width`"
+  );
 }
 
 for (const file of files) {
@@ -30,25 +39,38 @@ for (const file of files) {
 
 function generateImage(data, file) {
   // FIXME: gzip should be optional
-  const genotypes = new TextDecoder("utf-8")
-    .decode(pako.inflate(data))
-    .split("\n");
+  const parsed = Uint8Array.from(
+    new TextDecoder("utf-8").decode(pako.inflate(data)).split("\n")
+  );
+
+  let genotypes, binned;
+  if (!program.width) {
+    genotypes = parsed;
+  } else {
+    binned = new Uint8Array(program.width * program.width);
+    binSize = Math.ceil(parsed.length / binned.length);
+    for (let i = 0; i < binned.length; i += 1) {
+      const chunk = parsed.slice(i * binSize, (i + 1) * binSize);
+      if (chunk.length > 0) {
+        // TODO allow additional strategies
+        binned[i] = Math.max(...chunk);
+      }
+    }
+    genotypes = binned;
+  }
 
   const levels = Math.ceil(Math.log2(Math.sqrt(genotypes.length)));
   const n = 2 ** levels;
 
   const imageData = new Uint8ClampedArray(n * n * 4);
-  const genotypeChannel = {
-    "0": "r",
-    "1": "g",
-    "2": "b"
-  };
+  // r=0, g=1, b=2
+  const genotypeChannel = "rgb";
 
   for (index = 0; index < genotypes.length; index += 1) {
     const point = hilbertCurve.indexToPoint(index, n);
     imageData[offset(point.x, point.y, "a", n)] = 255;
-    if (program.grayscale && genotypes[index] !== "2") {
-      const channelValue = genotypes[index] === "0" ? 255 : 127;
+    if (program.grayscale && genotypes[index] !== 2) {
+      const channelValue = genotypes[index] === 0 ? 255 : 127;
       imageData[offset(point.x, point.y, "r", n)] = channelValue;
       imageData[offset(point.x, point.y, "g", n)] = channelValue;
       imageData[offset(point.x, point.y, "b", n)] = channelValue;
@@ -59,33 +81,27 @@ function generateImage(data, file) {
     }
   }
 
-  const img = sharp(Buffer.from(imageData), {
-    raw: { width: n, height: n, channels: 4 }
-  });
+  if (program.image) {
+    const img = sharp(Buffer.from(imageData), {
+      raw: { width: n, height: n, channels: 4 }
+    });
 
-  const prefix = file.split(".")[0];
-  const outfile = program.width
-    ? `${prefix}.${program.width}x${program.width}.png`
-    : `${prefix}.png`;
+    const prefix = file.split(".")[0];
+    const outfile = program.width
+      ? `${prefix}.${program.width}x${program.width}.png`
+      : `${prefix}.png`;
 
-  if (program.width) {
-    img.resize({ width: program.width });
+    img.toFile(outfile, err => {
+      if (err) {
+        console.error(err);
+      } else {
+        console.log(`[done] ${outfile}`);
+      }
+    });
   }
-
-  img.toFile(outfile, err => {
-    if (err) {
-      console.error(err);
-    } else {
-      console.log(`[done] ${outfile}`);
-    }
-  });
 }
 
 function offset(column, row, channel, width) {
   const channels = "rgba";
   return row * (width * 4) + column * 4 + channels.indexOf(channel);
-}
-
-function myParseInt(x) {
-  return Number.parseInt(x, 10);
 }
