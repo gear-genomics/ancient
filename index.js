@@ -47,9 +47,16 @@ function generateImage(data, file) {
   for (index = 0; index < genotypes.length; index += 1) {
     const point = hilbertCurve.indexToPoint(index, n);
     imageData[offset(point.x, point.y, "a", n)] = 255;
-    imageData[
-      offset(point.x, point.y, genotypeChannel[genotypes[index]], n)
-    ] = 255;
+    if (program.grayscale && genotypes[index] !== "2") {
+      const channelValue = genotypes[index] === "0" ? 255 : 127;
+      imageData[offset(point.x, point.y, "r", n)] = channelValue;
+      imageData[offset(point.x, point.y, "g", n)] = channelValue;
+      imageData[offset(point.x, point.y, "b", n)] = channelValue;
+    } else if (!program.grayscale) {
+      imageData[
+        offset(point.x, point.y, genotypeChannel[genotypes[index]], n)
+      ] = 255;
+    }
   }
 
   const img = sharp(Buffer.from(imageData), {
@@ -63,10 +70,6 @@ function generateImage(data, file) {
 
   if (program.width) {
     img.resize({ width: program.width });
-  }
-
-  if (program.grayscale) {
-    img.greyscale();
   }
 
   img.toFile(outfile, err => {
