@@ -52,7 +52,7 @@ function generateImage(data, file) {
 
   const prefix = file.split(".")[0];
 
-  const x = img.toFile(`${prefix}.png`, err => {
+  img.toFile(`${prefix}.png`, err => {
     if (err) {
       console.error(err);
     } else {
