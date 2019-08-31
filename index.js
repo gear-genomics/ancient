@@ -4,6 +4,7 @@ const program = require("commander");
 const fs = require("fs");
 const hilbertCurve = require("hilbert-curve");
 const pako = require("pako");
+const basename = require("path").basename;
 const sharp = require("sharp");
 
 program
@@ -78,7 +79,7 @@ function generateImage(data, file) {
     }
   }
 
-  const prefix = file.split(".")[0];
+  const prefix = basename(file).split(".")[0];
   const row = [prefix];
   for (let i = 0; i < imageData.length; i += 4) {
     if (program.grayscale) {
