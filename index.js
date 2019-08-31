@@ -12,7 +12,7 @@ program
   .option("-w, --width <number>", "width of resized image", x =>
     Number.parseInt(x, 10)
   )
-  .option("--no-image", "output raw values, no image")
+  .option("--no-image", "don't generate images")
   .arguments("<files...>");
 
 program.parse(process.argv);

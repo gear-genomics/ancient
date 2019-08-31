@@ -15,7 +15,7 @@ Usage: index [options] <files...>
 Options:
   -g, --grayscale       grayscale image
   -w, --width <number>  width of resized image
-  --no-image            output raw values, no image
+  --no-image            don't generate images
   -h, --help            output usage information
 ```
 
