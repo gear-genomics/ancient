@@ -98,7 +98,7 @@ function generateImage(data, file) {
     ? `${prefix}.${program.width}x${program.width}.tsv`
     : `${prefix}.tsv`;
 
-  fs.writeFile(valueFile, row.join("\t"), "utf8", err => {
+  fs.writeFile(valueFile, row.join("\t") + "\n", "utf8", err => {
     if (err) {
       throw err;
     }
