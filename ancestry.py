@@ -13,6 +13,7 @@ from keras.utils import np_utils
 from keras.utils import plot_model
 from math import sqrt
 import tensorflow as tf
+import tensorflowjs as tfjs
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -81,7 +82,7 @@ def Effnet(input_shape, nb_classes, include_top=True, weights=None):
 
 # TF version
 print(tf.__version__)
-
+tf.compat.v1.disable_eager_execution()
 
 # Parse command line
 parser = argparse.ArgumentParser(description='Deep learning')
@@ -162,6 +163,7 @@ print(score)
 
 # Save model
 model.save('ancestry.h5')
+tfjs.converters.save_keras_model(model, 'tfjsmodel')
 
 # Evaluate
 plt.clf()
