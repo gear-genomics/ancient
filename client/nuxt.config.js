@@ -45,16 +45,7 @@ export default {
   /*
    ** Nuxt.js modules
    */
-  modules: [
-    // Doc: https://axios.nuxtjs.org/usage
-    '@nuxtjs/axios',
-    '@nuxtjs/pwa'
-  ],
-  /*
-   ** Axios module configuration
-   ** See https://axios.nuxtjs.org/options
-   */
-  axios: {},
+  modules: ['@nuxtjs/pwa'],
   /*
    ** vuetify module configuration
    ** https://github.com/nuxt-community/vuetify-module
