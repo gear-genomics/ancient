@@ -1,8 +1,10 @@
 <template>
   <div>
-    <v-alert class="mt-4" v-model="error.show" dismissible type="error">{{ error.message }}</v-alert>
+    <v-alert class="mt-4" v-model="error.show" dismissible type="error">{{
+      error.message
+    }}</v-alert>
     <v-container>
-      <FilePond ref="upload"/>
+      <FilePond ref="upload" />
       <div class="text-center">
         <v-btn outlined color="primary" @click="run">
           <v-icon left>fas fa-rocket</v-icon>Run inference
@@ -35,6 +37,8 @@ loadSnps()
 const rsIds = {}
 const affyIdToRsId = {}
 let model
+// TODO possible to store this in model?
+const modelClassNames = ['AFR', 'AMR', 'EAS', 'EUR', 'SAS']
 let numSnps
 
 async function loadModel() {
@@ -162,6 +166,7 @@ export default {
           return
         }
 
+        const _results = []
         for (
           let sampleIndex = 0;
           sampleIndex < samples.length;
@@ -170,6 +175,7 @@ export default {
           const sample = samples[sampleIndex]
           console.log(`[start] processing sample ${sample}`)
           const data = genotypes[sample]
+          console.log('    genotypes', _.countBy(data))
           const gts = new Uint8Array(128 * 128)
           const binSize = data.length / gts.length
           for (let i = 0; i < gts.length; i += 1) {
@@ -202,10 +208,13 @@ export default {
             }
           }
 
+          console.log('    image', _.countBy(imageData.dataSync()))
+
           const xs = tf.reshape(imageData, [-1, 128, 128, 1])
           const pred = model.predict(xs)
 
           const probs = pred.dataSync()
+          console.log('   ', Array.from(probs))
           const vlSpec = {
             data: { values: [] },
             mark: 'bar',
@@ -218,12 +227,12 @@ export default {
           }
           probs.forEach((prob, i) => {
             vlSpec.data.values.push({
-              class: i,
+              class: modelClassNames[i],
               probability: prob
             })
           })
 
-          this.results.push({
+          _results.push({
             sample,
             prediction: probs,
             vlSpec,
@@ -232,6 +241,8 @@ export default {
 
           console.log(`[  end] processing sample ${sample}`)
         }
+
+        this.results = _results
 
         for (
           let sampleIndex = 0;
