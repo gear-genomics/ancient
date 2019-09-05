@@ -8,6 +8,12 @@
           <v-icon left>fas fa-rocket</v-icon>Run inference
         </v-btn>
       </div>
+      <section v-for="(res, i) in results" :key="i">
+        <v-card class="px-6 py-4 mt-8">
+          <v-card-title>{{ res.sample }}</v-card-title>
+          <div :id="`chart${i}`"></div>
+        </v-card>
+      </section>
     </v-container>
   </div>
 </template>
@@ -18,18 +24,24 @@ import * as hilbertCurve from 'hilbert-curve'
 import _ from 'lodash'
 import pako from 'pako'
 import * as tf from '@tensorflow/tfjs'
+import vegaEmbed from 'vega-embed'
 import vueFilePond from 'vue-filepond'
 import 'filepond/dist/filepond.min.css'
 
 const FilePond = vueFilePond()
-loadData()
+loadModel()
+loadSnps()
 
 const rsIds = {}
 const affyIdToRsId = {}
 let model
 let numSnps
 
-async function loadData() {
+async function loadModel() {
+  model = await tf.loadLayersModel('/tfjs_artifacts/model.json')
+}
+
+async function loadSnps() {
   const snpReq = await axios.get('/snps.txt.gz', {
     responseType: 'arraybuffer'
   })
@@ -62,8 +74,10 @@ async function loadData() {
   //   affyIdToRsId[affyId] = rsId
   //   numSnps += 1
   // }
+}
 
-  model = await tf.loadLayersModel('/tfjs_artifacts/model.json')
+function offset(column, row, width) {
+  return row * width + column
 }
 
 export default {
@@ -72,7 +86,8 @@ export default {
       error: {
         show: false,
         message: ''
-      }
+      },
+      results: []
     }
   },
   components: {
@@ -127,7 +142,12 @@ export default {
                 samples,
                 fields.slice(1)
               )) {
-                genotypes[sample][index] = Number.parseInt(genotype, 10)
+                let gt = Number.parseInt(genotype, 10)
+                // TODO figure out how to deal with those properly
+                if (gt < 0 || gt > 2) {
+                  gt = 0
+                }
+                genotypes[sample][index] = gt
               }
             }
             line = ''
@@ -136,6 +156,75 @@ export default {
           }
         }
         console.log('[  end] read input file')
+        if (_.some(genotypes[samples[0]], x => x === 255)) {
+          this.error.message = 'Input file has missing model SNPs'
+          this.error.show = true
+          return
+        }
+
+        const data = genotypes[samples[0]]
+        const gts = new Uint8Array(128 * 128)
+        const binSize = data.length / gts.length
+        for (let i = 0; i < gts.length; i += 1) {
+          const chunk = data.slice(
+            Math.ceil(i * binSize),
+            Math.floor((i + 1) * binSize)
+          )
+          if (chunk.length > 0) {
+            // TODO allow additional strategies
+            gts[i] = Math.max(...chunk)
+          }
+        }
+        const levels = Math.ceil(Math.log2(Math.sqrt(gts.length)))
+        const n = 2 ** levels
+
+        const imageData = tf.tensor1d(
+          Array.from({ length: n * n }).fill(0),
+          'float32'
+        )
+
+        for (let index = 0; index < gts.length; index += 1) {
+          const point = hilbertCurve.indexToPoint(index, n)
+          const gt = gts[index]
+          if (gt === 0) {
+            imageData[offset(point.x, point.y, n)] = 0
+          } else if (gt === 1) {
+            imageData[offset(point.x, point.y, n)] = 0.5
+          } else {
+            imageData[offset(point.x, point.y, n)] = 1
+          }
+        }
+
+        const xs = tf.reshape(imageData, [-1, 128, 128, 1])
+        const pred = model.predict(xs)
+
+        const probs = pred.dataSync()
+        const vlSpec = {
+          data: { values: [] },
+          mark: 'bar',
+          encoding: {
+            y: { field: 'class', type: 'nominal' },
+            x: { field: 'probability', type: 'quantitative' }
+          },
+          $schema: 'https://vega.github.io/schema/vega-lite/v4.0.0-beta.1.json'
+        }
+        probs.forEach((prob, i) => {
+          vlSpec.data.values.push({
+            class: i,
+            probability: prob
+          })
+        })
+
+        this.results.push({
+          sample: samples[0],
+          prediction: probs,
+          vlSpec,
+          hilbert: imageData
+        })
+
+        setTimeout(() => {
+          vegaEmbed(`#chart0`, vlSpec)
+        }, 2000)
       }
     }
   }
