@@ -224,7 +224,7 @@ export default {
 
         setTimeout(() => {
           vegaEmbed(`#chart0`, vlSpec)
-        }, 2000)
+        }, 10)
       }
     }
   }
