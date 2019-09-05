@@ -132,7 +132,6 @@ export default {
               samples = fields.slice(1)
               for (const sample of samples) {
                 genotypes[sample] = new Uint8Array(numSnps)
-                genotypes[sample].fill(255)
               }
             } else {
               const affyId = fields[0]
@@ -160,11 +159,8 @@ export default {
           }
         }
         console.log('[  end] read input file')
-        if (_.some(genotypes[samples[0]], x => x === 255)) {
-          this.error.message = 'Input file has missing model SNPs'
-          this.error.show = true
-          return
-        }
+
+        // TODO check that samples have at least 1% non-ref genotypes
 
         const _results = []
         for (
@@ -185,11 +181,17 @@ export default {
             )
             if (chunk.length > 0) {
               // TODO allow additional strategies
+              console.log(
+                '    chunk range ',
+                Math.min(...chunk),
+                Math.max(...chunk)
+              )
               gts[i] = Math.max(...chunk)
             }
           }
           const levels = Math.ceil(Math.log2(Math.sqrt(gts.length)))
           const n = 2 ** levels
+          console.log('    level/n', levels, n)
 
           const imageData = tf.tensor1d(
             Array.from({ length: n * n }).fill(0),
@@ -199,6 +201,7 @@ export default {
           for (let index = 0; index < gts.length; index += 1) {
             const point = hilbertCurve.indexToPoint(index, n)
             const gt = gts[index]
+            console.log('    gt', gt)
             if (gt === 0) {
               imageData[offset(point.x, point.y, n)] = 0
             } else if (gt === 1) {
