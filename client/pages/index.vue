@@ -9,7 +9,7 @@
         </v-btn>
       </div>
       <section v-for="(res, i) in results" :key="i">
-        <v-card class="px-6 py-4 mt-8">
+        <v-card class="px-6 py-4 mt-6">
           <v-card-title>{{ res.sample }}</v-card-title>
           <div :id="`chart${i}`"></div>
         </v-card>
