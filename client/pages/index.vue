@@ -8,8 +8,8 @@
           <v-icon left>fas fa-rocket</v-icon>Run inference
         </v-btn>
       </div>
-      <section v-for="(res, i) in results" :key="i">
-        <v-card class="px-6 py-4 mt-6">
+      <section v-for="(res, i) in results" :key="i" class="mt-6">
+        <v-card class="px-6 py-4 mb-6">
           <v-card-title>{{ res.sample }}</v-card-title>
           <div :id="`chart${i}`"></div>
         </v-card>
@@ -162,69 +162,86 @@ export default {
           return
         }
 
-        const data = genotypes[samples[0]]
-        const gts = new Uint8Array(128 * 128)
-        const binSize = data.length / gts.length
-        for (let i = 0; i < gts.length; i += 1) {
-          const chunk = data.slice(
-            Math.ceil(i * binSize),
-            Math.floor((i + 1) * binSize)
+        for (
+          let sampleIndex = 0;
+          sampleIndex < samples.length;
+          sampleIndex += 1
+        ) {
+          const sample = samples[sampleIndex]
+          console.log(`[start] processing sample ${sample}`)
+          const data = genotypes[sample]
+          const gts = new Uint8Array(128 * 128)
+          const binSize = data.length / gts.length
+          for (let i = 0; i < gts.length; i += 1) {
+            const chunk = data.slice(
+              Math.ceil(i * binSize),
+              Math.floor((i + 1) * binSize)
+            )
+            if (chunk.length > 0) {
+              // TODO allow additional strategies
+              gts[i] = Math.max(...chunk)
+            }
+          }
+          const levels = Math.ceil(Math.log2(Math.sqrt(gts.length)))
+          const n = 2 ** levels
+
+          const imageData = tf.tensor1d(
+            Array.from({ length: n * n }).fill(0),
+            'float32'
           )
-          if (chunk.length > 0) {
-            // TODO allow additional strategies
-            gts[i] = Math.max(...chunk)
+
+          for (let index = 0; index < gts.length; index += 1) {
+            const point = hilbertCurve.indexToPoint(index, n)
+            const gt = gts[index]
+            if (gt === 0) {
+              imageData[offset(point.x, point.y, n)] = 0
+            } else if (gt === 1) {
+              imageData[offset(point.x, point.y, n)] = 0.5
+            } else {
+              imageData[offset(point.x, point.y, n)] = 1
+            }
           }
-        }
-        const levels = Math.ceil(Math.log2(Math.sqrt(gts.length)))
-        const n = 2 ** levels
 
-        const imageData = tf.tensor1d(
-          Array.from({ length: n * n }).fill(0),
-          'float32'
-        )
+          const xs = tf.reshape(imageData, [-1, 128, 128, 1])
+          const pred = model.predict(xs)
 
-        for (let index = 0; index < gts.length; index += 1) {
-          const point = hilbertCurve.indexToPoint(index, n)
-          const gt = gts[index]
-          if (gt === 0) {
-            imageData[offset(point.x, point.y, n)] = 0
-          } else if (gt === 1) {
-            imageData[offset(point.x, point.y, n)] = 0.5
-          } else {
-            imageData[offset(point.x, point.y, n)] = 1
+          const probs = pred.dataSync()
+          const vlSpec = {
+            data: { values: [] },
+            mark: 'bar',
+            encoding: {
+              y: { field: 'class', type: 'nominal' },
+              x: { field: 'probability', type: 'quantitative' }
+            },
+            $schema:
+              'https://vega.github.io/schema/vega-lite/v4.0.0-beta.1.json'
           }
-        }
-
-        const xs = tf.reshape(imageData, [-1, 128, 128, 1])
-        const pred = model.predict(xs)
-
-        const probs = pred.dataSync()
-        const vlSpec = {
-          data: { values: [] },
-          mark: 'bar',
-          encoding: {
-            y: { field: 'class', type: 'nominal' },
-            x: { field: 'probability', type: 'quantitative' }
-          },
-          $schema: 'https://vega.github.io/schema/vega-lite/v4.0.0-beta.1.json'
-        }
-        probs.forEach((prob, i) => {
-          vlSpec.data.values.push({
-            class: i,
-            probability: prob
+          probs.forEach((prob, i) => {
+            vlSpec.data.values.push({
+              class: i,
+              probability: prob
+            })
           })
-        })
 
-        this.results.push({
-          sample: samples[0],
-          prediction: probs,
-          vlSpec,
-          hilbert: imageData
-        })
+          this.results.push({
+            sample,
+            prediction: probs,
+            vlSpec,
+            hilbert: imageData
+          })
 
-        setTimeout(() => {
-          vegaEmbed(`#chart0`, vlSpec)
-        }, 10)
+          console.log(`[  end] processing sample ${sample}`)
+        }
+
+        for (
+          let sampleIndex = 0;
+          sampleIndex < samples.length;
+          sampleIndex += 1
+        ) {
+          setTimeout(() => {
+            vegaEmbed(`#chart${sampleIndex}`, this.results[sampleIndex].vlSpec)
+          }, 10)
+        }
       }
     }
   }
