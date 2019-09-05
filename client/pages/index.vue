@@ -191,17 +191,12 @@ export default {
           }
           const levels = Math.ceil(Math.log2(Math.sqrt(gts.length)))
           const n = 2 ** levels
-          console.log('    level/n', levels, n)
 
-          const imageData = tf.tensor1d(
-            Array.from({ length: n * n }).fill(0),
-            'float32'
-          )
+          const imageData = new Float32Array(n * n)
 
           for (let index = 0; index < gts.length; index += 1) {
             const point = hilbertCurve.indexToPoint(index, n)
             const gt = gts[index]
-            console.log('    gt', gt)
             if (gt === 0) {
               imageData[offset(point.x, point.y, n)] = 0
             } else if (gt === 1) {
@@ -211,9 +206,10 @@ export default {
             }
           }
 
-          console.log('    image', _.countBy(imageData.dataSync()))
+          console.log('    image', _.countBy(imageData))
 
-          const xs = tf.reshape(imageData, [-1, 128, 128, 1])
+          const imageDataTensor = tf.tensor1d(imageData)
+          const xs = tf.reshape(imageDataTensor, [-1, 128, 128, 1])
           const pred = model.predict(xs)
 
           const probs = pred.dataSync()
