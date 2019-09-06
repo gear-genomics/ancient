@@ -1,12 +1,10 @@
 <template>
   <div>
     <v-alert class="mt-4" v-model="error.show" dismissible type="error">
-      {{
-      error.message
-      }}
+      {{ error.message }}
     </v-alert>
     <v-container>
-      <FilePond ref="upload"/>
+      <FilePond ref="upload" />
       <div class="text-center">
         <v-btn outlined color="primary" @click="run">
           <v-icon left>fas fa-rocket</v-icon>Run inference
@@ -40,7 +38,6 @@ loadModel()
 loadSnps()
 
 const rsIds = {}
-const affyIdToRsId = {}
 let model
 // TODO possible to store this in model?
 const modelClassNames = ['AFR', 'AMR', 'EAS', 'EUR', 'SAS']
@@ -63,9 +60,8 @@ async function loadSnps() {
   let index = 0
   for (let char of snpData) {
     if (char === '\n') {
-      const [chrom, pos, rsId, affyId] = line.split('\t')
-      rsIds[rsId] = { index, chrom, pos, affyId }
-      affyIdToRsId[affyId] = rsId
+      const [chrom, pos, rsId] = line.split('\t')
+      rsIds[rsId] = { index, chrom, pos }
       index += 1
       line = ''
     } else {
@@ -125,14 +121,15 @@ export default {
       reader.onload = event => {
         const contents = event.target.result
         let line = ''
-        let count = 1
+        let count = 0
+        let snpCount = 0
         console.log('[start] read input file')
         for (let char of contents) {
           if (char === '\n') {
+            count += 1
             if (count % 100000 === 0) {
               console.log(`    processed ${count} lines`)
             }
-            count += 1
             if (line.startsWith('#')) {
               line = ''
               continue
@@ -144,12 +141,12 @@ export default {
                 genotypes[sample] = new Uint8Array(numSnps)
               }
             } else {
-              const affyId = fields[0]
-              const rsId = affyIdToRsId[affyId]
-              if (!rsId) {
+              const rsId = fields[0]
+              if (!(rsId in rsIds)) {
                 line = ''
                 continue
               }
+              snpCount += 1
               const index = rsIds[rsId].index
               for (const [sample, genotype] of _.zip(
                 samples,
@@ -168,7 +165,7 @@ export default {
             line += char
           }
         }
-        console.log('[  end] read input file')
+        console.log(`[  end] read input file (n model snps=${snpCount})`)
 
         // TODO check that samples have at least 1% non-ref genotypes
 
@@ -244,16 +241,16 @@ export default {
 
         this.results = _results
 
-        for (
-          let sampleIndex = 0;
-          sampleIndex < samples.length;
-          sampleIndex += 1
-        ) {
-          setTimeout(() => {
+        setTimeout(() => {
+          for (
+            let sampleIndex = 0;
+            sampleIndex < samples.length;
+            sampleIndex += 1
+          ) {
             drawHilbertCurve(sampleIndex, this.results[sampleIndex].hilbert)
             vegaEmbed(`#chart${sampleIndex}`, this.results[sampleIndex].vlSpec)
-          }, 10)
-        }
+          }
+        }, 100)
       }
     }
   }
