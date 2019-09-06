@@ -1,10 +1,12 @@
 <template>
   <div>
-    <v-alert class="mt-4" v-model="error.show" dismissible type="error">{{
+    <v-alert class="mt-4" v-model="error.show" dismissible type="error">
+      {{
       error.message
-    }}</v-alert>
+      }}
+    </v-alert>
     <v-container>
-      <FilePond ref="upload" />
+      <FilePond ref="upload"/>
       <div class="text-center">
         <v-btn outlined color="primary" @click="run">
           <v-icon left>fas fa-rocket</v-icon>Run inference
@@ -13,7 +15,10 @@
       <section v-for="(res, i) in results" :key="i" class="mt-6">
         <v-card class="px-6 py-4 mb-6">
           <v-card-title>{{ res.sample }}</v-card-title>
-          <div :id="`chart${i}`"></div>
+          <div class="d-flex align-center">
+            <canvas :id="`canvas${i}`" width="256" height="256"></canvas>
+            <div :id="`chart${i}`"></div>
+          </div>
         </v-card>
       </section>
     </v-container>
@@ -71,17 +76,22 @@ async function loadSnps() {
   numSnps = index
 
   console.log(`[  end] read snp data (n=${numSnps})`)
-
-  // for (const line of lines(snpData)) {
-  //   const [chrom, pos, rsId, affyId] = line.split('\t')
-  //   rsIds[rsId] = { index: numSnps, chrom, pos, affyId }
-  //   affyIdToRsId[affyId] = rsId
-  //   numSnps += 1
-  // }
 }
 
 function offset(column, row, width) {
   return row * width + column
+}
+
+function drawHilbertCurve(sampleIndex, data) {
+  const canvas = document.querySelector(`#canvas${sampleIndex}`)
+  const ctx = canvas.getContext('2d')
+  for (let x = 0; x < 256; x += 2) {
+    for (let y = 0; y < 256; y += 2) {
+      const value = data[offset(x / 2, y / 2, 128)]
+      ctx.fillStyle = `rgba(0,0,0,${value})`
+      ctx.fillRect(x, y, 2, 2)
+    }
+  }
 }
 
 export default {
@@ -171,7 +181,6 @@ export default {
           const sample = samples[sampleIndex]
           console.log(`[start] processing sample ${sample}`)
           const data = genotypes[sample]
-          console.log('    genotypes', _.countBy(data))
           const gts = new Uint8Array(128 * 128)
           const binSize = data.length / gts.length
           for (let i = 0; i < gts.length; i += 1) {
@@ -181,11 +190,6 @@ export default {
             )
             if (chunk.length > 0) {
               // TODO allow additional strategies
-              console.log(
-                '    chunk range ',
-                Math.min(...chunk),
-                Math.max(...chunk)
-              )
               gts[i] = Math.max(...chunk)
             }
           }
@@ -206,14 +210,11 @@ export default {
             }
           }
 
-          console.log('    image', _.countBy(imageData))
-
           const imageDataTensor = tf.tensor1d(imageData)
           const xs = tf.reshape(imageDataTensor, [-1, 128, 128, 1])
           const pred = model.predict(xs)
 
           const probs = pred.dataSync()
-          console.log('   ', Array.from(probs))
           const vlSpec = {
             data: { values: [] },
             mark: 'bar',
@@ -249,6 +250,7 @@ export default {
           sampleIndex += 1
         ) {
           setTimeout(() => {
+            drawHilbertCurve(sampleIndex, this.results[sampleIndex].hilbert)
             vegaEmbed(`#chart${sampleIndex}`, this.results[sampleIndex].vlSpec)
           }, 10)
         }

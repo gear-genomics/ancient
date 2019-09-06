@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <v-app-bar app>
+    <v-app-bar app style="z-index: 10;">
       <nuxt-link class="header-logo" to="/">
         <v-avatar class="gear-app-logo" size="36">
           <span>AN</span>
