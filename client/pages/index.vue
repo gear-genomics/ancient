@@ -14,10 +14,10 @@
       </div>
       <section v-for="(res, i) in results" :key="i" class="mt-6">
         <v-card class="px-6 py-4 mb-6">
-          <v-card-title>{{ res.sample }}</v-card-title>
-          <div class="d-flex align-center">
+          <v-card-title class="mb-2 card-header">{{ res.sample }}</v-card-title>
+          <div class="vis-container">
             <canvas :id="`canvas${i}`" width="256" height="256"></canvas>
-            <div :id="`chart${i}`"></div>
+            <div :id="`chart${i}`" class="chart-container"></div>
           </div>
         </v-card>
       </section>
@@ -259,4 +259,27 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.vis-container {
+  display: flex;
+  align-items: center;
+}
+
+.chart-container {
+  margin: 0 0 0 2rem;
+}
+
+@media (max-width: 700px) {
+  .vis-container,
+  .card-header {
+    flex-direction: column;
+  }
+
+  .chart-container {
+    margin: 2rem 0 0 0;
+  }
+}
+</style>
+
 
