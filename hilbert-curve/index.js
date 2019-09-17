@@ -93,7 +93,3 @@ function processFile(data, file) {
     });
   }
 }
-
-function offset(column, row, width) {
-  return row * width + column;
-}
