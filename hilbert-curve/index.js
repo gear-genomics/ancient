@@ -51,10 +51,10 @@ function processFile(data, file) {
 
   const prefix = basename(file).split(".")[0];
   const tsvRow = [prefix];
-  for (let i = 0; i < imageData.length; i += 1) {
-    if (imageData[i] === 0) {
+  for (let i = 0; i < genotypes.length; i += 1) {
+    if (genotypes[i] === 2) {
       tsvRow.push(1);
-    } else if (imageData[i] === 127) {
+    } else if (genotypes[i] === 1) {
       tsvRow.push(0.5);
     } else {
       tsvRow.push(0);
@@ -80,8 +80,8 @@ function processFile(data, file) {
       }
     });
 
-    const imageFile = program.width
-      ? `${prefix}.${2 ** program.width}x${2 ** program.width}.png`
+    const imageFile = program.order
+      ? `${prefix}.${2 ** program.order}x${2 ** program.order}.png`
       : `${prefix}.png`;
 
     img.toFile(imageFile, err => {
