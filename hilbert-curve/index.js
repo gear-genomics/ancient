@@ -50,16 +50,7 @@ function processFile(data, file) {
   }
 
   const prefix = basename(file).split(".")[0];
-  const tsvRow = [prefix];
-  for (let i = 0; i < genotypes.length; i += 1) {
-    if (genotypes[i] === 2) {
-      tsvRow.push(1);
-    } else if (genotypes[i] === 1) {
-      tsvRow.push(0.5);
-    } else {
-      tsvRow.push(0);
-    }
-  }
+  const tsvRow = [prefix].concat(...imageData);
 
   const valueFile = program.order
     ? `${prefix}.${2 ** program.order}x${2 ** program.order}.tsv`
