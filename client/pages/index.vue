@@ -13,9 +13,11 @@
           <v-card-title class="mb-2 card-header">{{ res.sample }}</v-card-title>
           <div class="vis-container">
             <div class="canvas-container pa-2 grey--text text--lighten-2">
-              <canvas :id="`canvas${i}`" width="256" height="256"></canvas>
+              <HilbertCurve :width="256" :height="256" :data="res.hilbert"/>
             </div>
-            <div :id="`chart${i}`" class="chart-container"></div>
+            <div class="chart-container">
+              <BarChart :spec="res.vlSpec"/>
+            </div>
           </div>
         </v-card>
       </section>
@@ -29,16 +31,17 @@ import * as hilbertCurve from 'hilbert-curve'
 import _ from 'lodash'
 import pako from 'pako'
 import * as tf from '@tensorflow/tfjs'
-import vegaEmbed from 'vega-embed'
 import vueFilePond from 'vue-filepond'
+import BarChart from '@/components/BarChart'
+import HilbertCurve from '@/components/HilbertCurve'
+
 import 'filepond/dist/filepond.min.css'
 
 const FilePond = vueFilePond()
 loadModel()
 loadSnps()
 
-const grayscale = true
-const width = 128
+const order = 7
 
 const rsIds = {}
 let model
@@ -77,22 +80,6 @@ async function loadSnps() {
   console.log(`[  end] read snp data (n=${numSnps})`)
 }
 
-function offset(column, row, width) {
-  return row * width + column
-}
-
-function drawHilbertCurve(sampleIndex, data) {
-  const canvas = document.querySelector(`#canvas${sampleIndex}`)
-  const ctx = canvas.getContext('2d')
-  for (let x = 0; x < 256; x += 2) {
-    for (let y = 0; y < 256; y += 2) {
-      const value = data[offset(x / 2, y / 2, 128)] * 255
-      ctx.fillStyle = `rgba(${value}, ${value}, ${value})`
-      ctx.fillRect(x, y, 2, 2)
-    }
-  }
-}
-
 export default {
   data() {
     return {
@@ -104,7 +91,9 @@ export default {
     }
   },
   components: {
-    FilePond
+    BarChart,
+    FilePond,
+    HilbertCurve
   },
   methods: {
     run() {
@@ -182,73 +171,23 @@ export default {
           console.log(`[start] processing sample ${sample}`)
           const data = genotypes[sample]
           console.log('raw genotypes', _.countBy(data))
-          const binned = new Uint8Array(width * width)
-          const binSize = data.length / binned.length
-          for (let i = 0; i < binned.length; i += 1) {
-            const chunk = data.slice(
-              Math.ceil(i * binSize),
-              Math.floor((i + 1) * binSize)
-            )
-            if (chunk.length > 0) {
-              // TODO allow additional strategies
-              binned[i] = Math.max(...chunk)
-            }
-          }
-
-          const gts = binned
+          const gts = hilbertCurve.construct(data, order)
           console.log('binned genotypes', _.countBy(gts))
 
-          const levels = Math.ceil(Math.log2(Math.sqrt(gts.length)))
-          const n = 2 ** levels
+          const grayscaleValues = new Array(gts.length)
+          grayscaleValues.fill(1)
 
-          const imageData = new Uint8ClampedArray(n * n)
-
-          for (let index = 0; index < gts.length; index += 1) {
-            const point = hilbertCurve.indexToPoint(index, n)
-            if (grayscale && gts[index] !== 2) {
-              const channelValue = gts[index] === 0 ? 255 : 127
-              imageData[offset(point.x, point.y, n)] = channelValue
-            } else if (!grayscale) {
-              imageData[offset(point.x, point.y, n)] = 255
+          for (let i = 0; i < gts.length; i += 1) {
+            if (gts[i] === 2) {
+              grayscaleValues[i] = 0
+            } else if (gts[i] === 1) {
+              grayscaleValues[i] = 0.5
             }
           }
 
-          console.log('raw image', _.countBy(imageData))
+          console.log('grayscale values', _.countBy(grayscaleValues))
 
-          const row = []
-          for (let i = 0; i < imageData.length; i += 1) {
-            if (grayscale) {
-              if (imageData[i] === 255) {
-                row.push(0)
-              } else if (imageData[i] === 127) {
-                row.push(0.5)
-              } else {
-                row.push(1)
-              }
-            } else {
-              row.push(
-                `${imageData[i]},${imageData[i + 1]},${imageData[i] + 2}`
-              )
-            }
-          }
-
-          console.log('grayscale', _.countBy(row))
-
-          // const imageData = new Float32Array(n * n)
-
-          // for (let index = 0; index < gts.length; index += 1) {
-          //   const point = hilbertCurve.indexToPoint(index, n)
-          //   const gt = gts[index]
-          //   if (gt === 0) {
-          //     imageData[offset(point.x, point.y, n)] = 0
-          //   } else if (gt === 1) {
-          //     imageData[offset(point.x, point.y, n)] = 0.5
-          //   } else {
-          //     imageData[offset(point.x, point.y, n)] = 1
-          //   }
-          // }
-
-          const imageDataTensor = tf.tensor1d(row)
+          const imageDataTensor = tf.tensor1d(grayscaleValues)
           const xs = tf.reshape(imageDataTensor, [-1, 128, 128, 1])
           const pred = model.predict(xs)
 
@@ -274,24 +213,13 @@ export default {
             sample,
             prediction: probs,
             vlSpec,
-            hilbert: row
+            hilbert: grayscaleValues
           })
 
           console.log(`[  end] processing sample ${sample}`)
         }
 
         this.results = _results
-
-        setTimeout(() => {
-          for (
-            let sampleIndex = 0;
-            sampleIndex < samples.length;
-            sampleIndex += 1
-          ) {
-            drawHilbertCurve(sampleIndex, this.results[sampleIndex].hilbert)
-            vegaEmbed(`#chart${sampleIndex}`, this.results[sampleIndex].vlSpec)
-          }
-        }, 100)
       }
     }
   }

@@ -15,7 +15,7 @@
     "@tensorflow/tfjs": "^1.2.8",
     "axios": "^0.19.0",
     "filepond": "^4.6.0",
-    "hilbert-curve": "^1.1.0",
+    "hilbert-curve": "^2.0.0-beta.1",
     "lodash": "^4.17.15",
     "nuxt": "^2.0.0",
     "pako": "^1.0.10",
