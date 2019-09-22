@@ -8,7 +8,7 @@
           <v-icon left>fas fa-rocket</v-icon>Run inference
         </v-btn>
       </div>
-      <section v-for="(res, i) in results" :key="i" class="mt-6">
+      <section v-for="res in results" :key="res.sample" class="mt-6">
         <v-card class="px-6 py-4 mb-6">
           <v-card-title class="mb-2 card-header">{{ res.sample }}</v-card-title>
           <div class="vis-container">
@@ -185,16 +185,15 @@ export default {
           const gts = hilbertCurve.construct(data, order)
           console.log('binned genotypes', _.countBy(gts))
 
-          const grayscaleValues = new Array(gts.length)
-          grayscaleValues.fill(1)
-
-          for (let i = 0; i < gts.length; i += 1) {
-            if (gts[i] === 2) {
-              grayscaleValues[i] = 0
-            } else if (gts[i] === 1) {
-              grayscaleValues[i] = 0.5
+          const grayscaleValues = gts.map(gt => {
+            if (gt === 2) {
+              return 0
             }
-          }
+            if (gt === 1) {
+              return 0.5
+            }
+            return 1
+          })
 
           console.log('grayscale values', _.countBy(grayscaleValues))
 

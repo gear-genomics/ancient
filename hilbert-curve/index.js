@@ -38,19 +38,18 @@ function processFile(data, file) {
   );
 
   const genotypes = hilbertCurve.construct(parsed, program.order);
-  const grayscaleValues = new Array(genotypes.length);
-  grayscaleValues.fill(1);
-
-  for (let i = 0; i < genotypes.length; i += 1) {
-    if (genotypes[i] === 2) {
-      grayscaleValues[i] = 0;
-    } else if (genotypes[i] === 1) {
-      grayscaleValues[i] = 0.5;
+  const grayscaleValues = genotypes.map(genotype => {
+    if (genotype === 2) {
+      return 0;
     }
-  }
+    if (genotype === 1) {
+      return 0.5;
+    }
+    return 1;
+  });
 
   const prefix = basename(file).split(".")[0];
-  const tsvRow = [prefix].concat(...grayscaleValues);
+  const tsvRow = [prefix].concat(grayscaleValues);
 
   const valueFile = program.order
     ? `${prefix}.${2 ** program.order}x${2 ** program.order}.tsv`
