@@ -109,14 +109,25 @@ export default {
       const genotypes = {}
 
       const reader = new FileReader()
-      reader.readAsText(inputFile.file)
+
+      const isGzip = inputFile.fileExtension === 'gz'
+
+      if (isGzip) {
+        reader.readAsArrayBuffer(inputFile.file)
+      } else {
+        reader.readAsText(inputFile.file)
+      }
+
       reader.onload = event => {
-        const contents = event.target.result
+        let content = event.target.result
+        if (isGzip) {
+          content = pako.ungzip(content, { to: 'string' })
+        }
         let line = ''
         let count = 0
         let snpCount = 0
         console.log('[start] read input file')
-        for (let char of contents) {
+        for (let char of content) {
           if (char === '\n') {
             count += 1
             if (count % 100000 === 0) {
