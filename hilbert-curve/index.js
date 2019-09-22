@@ -38,19 +38,19 @@ function processFile(data, file) {
   );
 
   const genotypes = hilbertCurve.construct(parsed, program.order);
-  const imageData = new Uint8Array(genotypes.length);
-  imageData.fill(255);
+  const grayscaleValues = new Array(genotypes.length);
+  grayscaleValues.fill(1);
 
   for (let i = 0; i < genotypes.length; i += 1) {
     if (genotypes[i] === 2) {
-      imageData[i] = 0;
+      grayscaleValues[i] = 0;
     } else if (genotypes[i] === 1) {
-      imageData[i] = 127;
+      grayscaleValues[i] = 0.5;
     }
   }
 
   const prefix = basename(file).split(".")[0];
-  const tsvRow = [prefix].concat(...imageData);
+  const tsvRow = [prefix].concat(...grayscaleValues);
 
   const valueFile = program.order
     ? `${prefix}.${2 ** program.order}x${2 ** program.order}.tsv`
@@ -63,6 +63,7 @@ function processFile(data, file) {
   });
 
   if (program.image) {
+    const imageData = grayscaleValues.map(x => x * 256 - 1);
     const img = sharp(Buffer.from(imageData), {
       raw: {
         width: Math.sqrt(imageData.length),
