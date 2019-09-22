@@ -63,7 +63,7 @@ function processFile(data, file) {
   });
 
   if (program.image) {
-    const imageData = grayscaleValues.map(x => x * 256 - 1);
+    const imageData = grayscaleValues.map(x => Math.floor(x * 255));
     const img = sharp(Buffer.from(imageData), {
       raw: {
         width: Math.sqrt(imageData.length),
