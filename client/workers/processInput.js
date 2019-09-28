@@ -53,7 +53,15 @@ addEventListener('message', event => {
             genotypes[sample] = new Uint8Array(numSnps)
           }
         } else {
-          const rsId = fields[0]
+          const snpId = fields[0]
+          let rsId
+          let isAffy = false
+          if (snpId in snps.affy) {
+            rsId = snps.affy[snpId].rsId
+            isAffy = true
+          } else {
+            rsId = snpId
+          }
           if (!(rsId in snps.rs)) {
             line = ''
             continue
@@ -62,6 +70,13 @@ addEventListener('message', event => {
           const index = snps.rs[rsId]
           for (const [sample, genotype] of _.zip(samples, fields.slice(1))) {
             let gt = Number.parseInt(genotype, 10)
+            if (isAffy && snps.affy[snpId].allele === 'AlleleB') {
+              if (gt === 0) {
+                gt = 2
+              } else if (gt === 2) {
+                gt = 0
+              }
+            }
             // TODO figure out how to deal with those properly
             if (gt < 0 || gt > 2) {
               gt = 0

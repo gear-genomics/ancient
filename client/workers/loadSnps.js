@@ -19,7 +19,7 @@ async function load() {
 
   for (let char of snpData) {
     if (char === '\n') {
-      const [chrom, pos, rsId, affyId, affyAllele] = line.split('\t')
+      const [, , rsId, affyId, affyAllele] = line.split('\t')
       snps.rs[rsId] = index
       snps.affy[affyId] = { rsId, allele: affyAllele }
       index += 1
