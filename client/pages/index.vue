@@ -4,9 +4,17 @@
     <v-container>
       <FilePond ref="upload"/>
       <div class="text-center">
-        <v-btn outlined color="primary" @click="run">
+        <v-btn outlined color="primary" @click="run" :disabled="isLoadingSnps || isProcessingInput">
           <v-icon left>fas fa-rocket</v-icon>Run inference
         </v-btn>
+      </div>
+      <div class="text-center mt-4 status-container">
+        <div v-if="isLoadingSnps">
+          <v-icon left>fas fa-cog fa-spin</v-icon>Loading SNP database...
+        </div>
+        <div v-else-if="isProcessingInput">
+          <v-icon left>fas fa-cog fa-spin</v-icon>Crunching input data...
+        </div>
       </div>
       <section v-for="res in results" :key="res.sample" class="mt-6">
         <v-card class="px-6 py-4 mb-6">
@@ -26,11 +34,6 @@
 </template>
 
 <script>
-import axios from 'axios'
-import * as hilbertCurve from 'hilbert-curve'
-import _ from 'lodash'
-import pako from 'pako'
-import * as tf from '@tensorflow/tfjs'
 import vueFilePond from 'vue-filepond'
 import BarChart from '@/components/BarChart'
 import HilbertCurve from '@/components/HilbertCurve'
@@ -38,47 +41,6 @@ import HilbertCurve from '@/components/HilbertCurve'
 import 'filepond/dist/filepond.min.css'
 
 const FilePond = vueFilePond()
-loadModel()
-loadSnps()
-
-const order = 7
-
-const rsIds = {}
-let model
-// TODO possible to store this in model?
-const modelClassNames = ['AFR', 'AMR', 'EAS', 'EUR', 'SAS']
-let numSnps
-
-async function loadModel() {
-  model = await tf.loadLayersModel('/tfjs_artifacts/model.json')
-}
-
-async function loadSnps() {
-  const snpReq = await axios.get('/snps.txt.gz', {
-    responseType: 'arraybuffer'
-  })
-
-  const snpData = new TextDecoder('utf-8').decode(pako.inflate(snpReq.data))
-
-  console.log('[start] read snp data')
-
-  let line = ''
-  let index = 0
-  for (let char of snpData) {
-    if (char === '\n') {
-      const [chrom, pos, rsId] = line.split('\t')
-      rsIds[rsId] = { index, chrom, pos }
-      index += 1
-      line = ''
-    } else {
-      line += char
-    }
-  }
-
-  numSnps = index
-
-  console.log(`[  end] read snp data (n=${numSnps})`)
-}
 
 export default {
   data() {
@@ -87,7 +49,10 @@ export default {
         show: false,
         message: ''
       },
-      results: []
+      results: [],
+      snps: null,
+      isLoadingSnps: true,
+      isProcessingInput: false
     }
   },
   components: {
@@ -104,139 +69,39 @@ export default {
         return
       }
       this.error.show = false
-
-      let samples
-      const genotypes = {}
-
-      const reader = new FileReader()
-
-      const isGzip = inputFile.fileExtension === 'gz'
-
-      if (isGzip) {
-        reader.readAsArrayBuffer(inputFile.file)
-      } else {
-        reader.readAsText(inputFile.file)
-      }
-
-      reader.onload = event => {
-        let content = event.target.result
-        if (isGzip) {
-          content = pako.ungzip(content, { to: 'string' })
-        }
-        let line = ''
-        let count = 0
-        let snpCount = 0
-        console.log('[start] read input file')
-        for (let char of content) {
-          if (char === '\n') {
-            count += 1
-            if (count % 100000 === 0) {
-              console.log(`    processed ${count} lines`)
-            }
-            if (line.startsWith('#')) {
-              line = ''
-              continue
-            }
-            const fields = line.split('\t')
-            if (!samples) {
-              samples = fields.slice(1)
-              for (const sample of samples) {
-                genotypes[sample] = new Uint8Array(numSnps)
-              }
-            } else {
-              const rsId = fields[0]
-              if (!(rsId in rsIds)) {
-                line = ''
-                continue
-              }
-              snpCount += 1
-              const index = rsIds[rsId].index
-              for (const [sample, genotype] of _.zip(
-                samples,
-                fields.slice(1)
-              )) {
-                let gt = Number.parseInt(genotype, 10)
-                // TODO figure out how to deal with those properly
-                if (gt < 0 || gt > 2) {
-                  gt = 0
-                }
-                genotypes[sample][index] = gt
-              }
-            }
-            line = ''
-          } else {
-            line += char
-          }
-        }
-        console.log(`[  end] read input file (n model snps=${snpCount})`)
-
-        // TODO check that samples have at least 1% non-ref genotypes
-
-        const _results = []
-        for (
-          let sampleIndex = 0;
-          sampleIndex < samples.length;
-          sampleIndex += 1
-        ) {
-          const sample = samples[sampleIndex]
-          console.log(`[start] processing sample ${sample}`)
-          const data = genotypes[sample]
-          console.log('raw genotypes', _.countBy(data))
-          const gts = hilbertCurve.construct(data, order)
-          console.log('binned genotypes', _.countBy(gts))
-
-          const grayscaleValues = gts.map(gt => {
-            if (gt === 2) {
-              return 0
-            }
-            if (gt === 1) {
-              return 0.5
-            }
-            return 1
-          })
-
-          console.log('grayscale values', _.countBy(grayscaleValues))
-
-          const imageDataTensor = tf.tensor1d(grayscaleValues)
-          const xs = tf.reshape(imageDataTensor, [-1, 128, 128, 1])
-          const pred = model.predict(xs)
-
-          const probs = pred.dataSync()
-          const vlSpec = {
-            data: { values: [] },
-            mark: 'bar',
-            encoding: {
-              y: { field: 'class', type: 'nominal' },
-              x: { field: 'probability', type: 'quantitative' }
-            },
-            $schema:
-              'https://vega.github.io/schema/vega-lite/v4.0.0-beta.1.json'
-          }
-          probs.forEach((prob, i) => {
-            vlSpec.data.values.push({
-              class: modelClassNames[i],
-              probability: prob
-            })
-          })
-
-          _results.push({
-            sample,
-            prediction: probs,
-            vlSpec,
-            hilbert: grayscaleValues
-          })
-
-          console.log(`[  end] processing sample ${sample}`)
-        }
-
-        this.results = _results
+      this.results = []
+      this.isProcessingInput = true
+      this.$_processInput.postMessage({
+        file: inputFile.file,
+        snps: this.snps
+      })
+      this.$_processInput.onmessage = event => {
+        this.results = event.data
+        this.isProcessingInput = false
       }
     }
+  },
+  created() {
+    this.$_processInput = new Worker('@/workers/processInput.js', {
+      type: 'module'
+    })
+    const loadSnps = new Worker('@/workers/loadSnps.js', {
+      type: 'module'
+    })
+    loadSnps.onmessage = event => {
+      this.snps = event.data
+      this.isLoadingSnps = false
+    }
+    loadSnps.postMessage(null)
   }
 }
 </script>
 
 <style scoped>
+.status-container {
+  font-family: 'Comfortaa', sans-serif;
+}
+
 .vis-container {
   display: flex;
   align-items: center;

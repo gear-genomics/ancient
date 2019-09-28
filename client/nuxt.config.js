@@ -1,4 +1,5 @@
 import colors from 'vuetify/es5/util/colors'
+import WorkerPlugin from 'worker-plugin'
 
 export default {
   mode: 'spa',
@@ -22,7 +23,7 @@ export default {
       {
         rel: 'stylesheet',
         href:
-          'https://fonts.googleapis.com/css?family=Rosarivo|Unica+One&display=swap'
+          'https://fonts.googleapis.com/css?family=Rosarivo|Unica+One|Comfortaa&display=swap'
       }
     ]
   },
@@ -63,6 +64,9 @@ export default {
     /*
      ** You can extend webpack config here
      */
-    extend(config, ctx) {}
+    extend(config, ctx) {
+      config.output.globalObject = 'self'
+      config.plugins.push(new WorkerPlugin())
+    }
   }
 }
