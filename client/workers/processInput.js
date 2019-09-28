@@ -3,12 +3,6 @@ import _ from 'lodash'
 import pako from 'pako'
 import * as tf from '@tensorflow/tfjs'
 
-// let model
-// async function loadModel() {
-//   model = await tf.loadLayersModel('/tfjs_artifacts/model.json')
-// }
-// loadModel()
-
 let model
 ;(async () => {
   model = await tf.loadLayersModel('/tfjs_artifacts/model.json')
