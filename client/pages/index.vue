@@ -128,10 +128,6 @@ export default {
   margin: 0 0 0 2rem;
 }
 
-canvas {
-  display: block;
-}
-
 .canvas-container {
   border: 1px solid;
 }
