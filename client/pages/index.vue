@@ -1,7 +1,7 @@
 <template>
   <div>
     <v-alert class="mt-4" v-model="error.show" dismissible type="error">{{ error.message }}</v-alert>
-    <v-container>
+    <v-container class="pb-12">
       <div class="file-input-container mt-2">
         <FilePond ref="upload" class="file-input"/>
       </div>
@@ -19,7 +19,7 @@
         </div>
       </div>
       <section v-for="res in results" :key="res.sample" class="mt-6">
-        <v-card class="px-6 py-4 mb-6">
+        <v-card class="px-6 py-4">
           <v-card-title class="mb-2 card-header">{{ res.sample }}</v-card-title>
           <div class="vis-container">
             <div class="canvas-container pa-2 grey--text text--lighten-2">
@@ -100,7 +100,8 @@ export default {
 </script>
 
 <style scoped>
-.file-input-container {
+.file-input-container,
+.v-card {
   max-width: 1200px;
   margin: 0 auto;
 }
