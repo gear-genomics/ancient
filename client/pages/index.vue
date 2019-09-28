@@ -2,13 +2,15 @@
   <div>
     <v-alert class="mt-4" v-model="error.show" dismissible type="error">{{ error.message }}</v-alert>
     <v-container>
-      <FilePond ref="upload"/>
+      <div class="file-input-container mt-2">
+        <FilePond ref="upload" class="file-input"/>
+      </div>
       <div class="text-center">
         <v-btn outlined color="primary" @click="run" :disabled="isLoadingSnps || isProcessingInput">
           <v-icon left>fas fa-rocket</v-icon>Run inference
         </v-btn>
       </div>
-      <div class="text-center mt-4 status-container">
+      <div class="text-center grey--text text--darken-1 mt-4 status-container">
         <div v-if="isLoadingSnps">
           <v-icon left>fas fa-cog fa-spin</v-icon>Loading SNP database...
         </div>
@@ -98,6 +100,20 @@ export default {
 </script>
 
 <style scoped>
+.file-input-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.file-input >>> .filepond--root {
+  font-family: inherit;
+}
+
+.file-input >>> .filepond--panel-root {
+  background-color: transparent;
+  border: 1px solid #64605e;
+}
+
 .status-container {
   font-family: 'Comfortaa', sans-serif;
 }
