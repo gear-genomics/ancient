@@ -114,9 +114,11 @@ addEventListener('message', event => {
 
       console.log('grayscale values', _.countBy(grayscaleValues))
 
-      const imageDataTensor = tf.tensor1d(grayscaleValues)
-      const xs = tf.reshape(imageDataTensor, [-1, 128, 128, 1])
-      const pred = model.predict(xs)
+      const pred = tf.tidy(() => {
+        const grayscaleValueTensor = tf.tensor1d(grayscaleValues)
+        const xs = tf.reshape(grayscaleValueTensor, [-1, 128, 128, 1])
+        return model.predict(xs)
+      })
 
       const probs = pred.dataSync()
       const vlSpec = {
