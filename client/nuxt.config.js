@@ -65,8 +65,7 @@ export default {
      ** You can extend webpack config here
      */
     extend(config, ctx) {
-      config.output.globalObject = 'self'
-      config.plugins.push(new WorkerPlugin())
+      config.plugins.push(new WorkerPlugin({ globalObject: false }))
     }
   }
 }
