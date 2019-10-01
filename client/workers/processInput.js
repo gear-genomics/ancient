@@ -128,7 +128,7 @@ addEventListener('message', event => {
           y: { field: 'population', type: 'nominal' },
           x: { field: 'probability', type: 'quantitative' }
         },
-        $schema: 'https://vega.github.io/schema/vega-lite/v4.0.0-beta.1.json'
+        $schema: 'https://vega.github.io/schema/vega-lite/v4.0.0-beta.9.json'
       }
       probs.forEach((prob, i) => {
         vlSpec.data.values.push({
