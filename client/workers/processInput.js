@@ -137,13 +137,6 @@ addEventListener('message', event => {
         })
       })
 
-      // results.push({
-      //   sample,
-      //   prediction: probs,
-      //   vlSpec,
-      //   hilbert: grayscaleValues
-      // })
-
       postMessage({
         type: 'result',
         value: {
