@@ -125,14 +125,14 @@ addEventListener('message', event => {
         data: { values: [] },
         mark: 'bar',
         encoding: {
-          y: { field: 'class', type: 'nominal' },
+          y: { field: 'population', type: 'nominal' },
           x: { field: 'probability', type: 'quantitative' }
         },
         $schema: 'https://vega.github.io/schema/vega-lite/v4.0.0-beta.1.json'
       }
       probs.forEach((prob, i) => {
         vlSpec.data.values.push({
-          class: modelClassNames[i],
+          population: modelClassNames[i],
           probability: prob
         })
       })
