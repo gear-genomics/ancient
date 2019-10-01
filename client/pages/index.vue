@@ -1,12 +1,22 @@
 <template>
   <div>
-    <v-alert class="mt-4" v-model="error.show" dismissible type="error">{{ error.message }}</v-alert>
+    <v-alert
+      class="mt-4"
+      v-model="error.show"
+      :dismissible="!isCpuBackend"
+      type="error"
+    >{{ error.message }}</v-alert>
     <v-container class="pb-12">
       <div class="file-input-container mt-2">
         <FilePond ref="upload" class="file-input"/>
       </div>
       <div class="text-center">
-        <v-btn outlined color="primary" @click="run" :disabled="isLoadingSnps || isProcessingInput">
+        <v-btn
+          outlined
+          color="primary"
+          @click="run"
+          :disabled="isLoadingSnps || isProcessingInput || isCpuBackend"
+        >
           <v-icon left>fas fa-rocket</v-icon>Run inference
         </v-btn>
       </div>
@@ -39,10 +49,18 @@
 import vueFilePond from 'vue-filepond'
 import BarChart from '@/components/BarChart'
 import HilbertCurve from '@/components/HilbertCurve'
+import * as tf from '@tensorflow/tfjs'
 
 import 'filepond/dist/filepond.min.css'
 
 const FilePond = vueFilePond()
+
+/*
+  `model.predict` currently gives wrong results with a CPU backend
+  therefore, we have to make sure we are running on a GPU
+*/
+tf.scalar(0) // force backend initialization
+const isCpuBackend = tf.getBackend() === 'cpu'
 
 export default {
   data() {
@@ -53,8 +71,9 @@ export default {
       },
       results: [],
       snps: null,
-      isLoadingSnps: true,
-      isProcessingInput: false
+      isLoadingSnps: false,
+      isProcessingInput: false,
+      isCpuBackend
     }
   },
   components: {
@@ -88,6 +107,12 @@ export default {
     }
   },
   created() {
+    if (this.isCpuBackend) {
+      this.error.message = 'Sorry, your browser does not support WebGL.'
+      this.error.show = true
+      return
+    }
+
     this.$_processInput = new Worker('@/workers/processInput.js', {
       type: 'module'
     })
@@ -98,6 +123,7 @@ export default {
       this.snps = event.data
       this.isLoadingSnps = false
     }
+    this.isLoadingSnps = true
     loadSnps.postMessage(null)
   }
 }
