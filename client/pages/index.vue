@@ -78,8 +78,12 @@ export default {
         snps: this.snps
       })
       this.$_processInput.onmessage = event => {
-        this.results = event.data
-        this.isProcessingInput = false
+        const payload = event.data
+        if (payload.type === 'result') {
+          this.results.push(payload.value)
+        } else if (payload.type === 'EOM') {
+          this.isProcessingInput = false
+        }
       }
     }
   },

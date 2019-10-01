@@ -137,15 +137,25 @@ addEventListener('message', event => {
         })
       })
 
-      results.push({
-        sample,
-        prediction: probs,
-        vlSpec,
-        hilbert: grayscaleValues
+      // results.push({
+      //   sample,
+      //   prediction: probs,
+      //   vlSpec,
+      //   hilbert: grayscaleValues
+      // })
+
+      postMessage({
+        type: 'result',
+        value: {
+          sample,
+          prediction: probs,
+          vlSpec,
+          hilbert: grayscaleValues
+        }
       })
 
       console.log(`[  end] processing sample ${sample}`)
     }
-    postMessage(results)
+    postMessage({ type: 'EOM', value: null })
   }
 })
