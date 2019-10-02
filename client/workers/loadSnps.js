@@ -15,7 +15,7 @@ async function load() {
     affy: {}
   }
 
-  console.log('[start] read snp data')
+  //console.log('[start] read snp data')
 
   for (let char of snpData) {
     if (char === '\n') {
@@ -29,7 +29,7 @@ async function load() {
     }
   }
 
-  console.log(`[  end] read snp data (n=${index})`)
+  //console.log(`[  end] read snp data (n=${index})`)
   return snps
 }
 

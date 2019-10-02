@@ -33,15 +33,11 @@ addEventListener('message', event => {
       content = pako.ungzip(content, { to: 'string' })
     }
     let line = ''
-    let count = 0
     let snpCount = 0
-    console.log('[start] read input file')
+    //console.log('[start] read input file')
+
     for (let char of content) {
       if (char === '\n') {
-        count += 1
-        if (count % 100000 === 0) {
-          console.log(`    processed ${count} lines`)
-        }
         if (line.startsWith('#')) {
           line = ''
           continue
@@ -89,18 +85,18 @@ addEventListener('message', event => {
         line += char
       }
     }
-    console.log(`[  end] read input file (n model snps=${snpCount})`)
+    //console.log(`[  end] read input file (n model snps=${snpCount})`)
 
     // TODO check that samples have at least 1% non-ref genotypes
 
     const results = []
     for (let sampleIndex = 0; sampleIndex < samples.length; sampleIndex += 1) {
       const sample = samples[sampleIndex]
-      console.log(`[start] processing sample ${sample}`)
+      //console.log(`[start] processing sample ${sample}`)
       const data = genotypes[sample]
-      console.log('raw genotypes', _.countBy(data))
+      //console.log('raw genotypes', _.countBy(data))
       const gts = hilbertCurve.construct(data, order)
-      console.log('binned genotypes', _.countBy(gts))
+      //console.log('binned genotypes', _.countBy(gts))
 
       const grayscaleValues = gts.map(gt => {
         if (gt === 2) {
@@ -112,7 +108,7 @@ addEventListener('message', event => {
         return 1
       })
 
-      console.log('grayscale values', _.countBy(grayscaleValues))
+      //console.log('grayscale values', _.countBy(grayscaleValues))
 
       const pred = tf.tidy(() => {
         const grayscaleValueTensor = tf.tensor1d(grayscaleValues)
@@ -147,7 +143,7 @@ addEventListener('message', event => {
         }
       })
 
-      console.log(`[  end] processing sample ${sample}`)
+      //console.log(`[  end] processing sample ${sample}`)
     }
     postMessage({ type: 'EOM', value: null })
   }
