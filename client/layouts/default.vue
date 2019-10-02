@@ -10,7 +10,7 @@
         </v-toolbar-title>
       </nuxt-link>
       <v-spacer></v-spacer>
-      <v-tooltip bottom>
+      <!-- <v-tooltip bottom>
         <template v-slot:activator="{ on }">
           <v-btn text v-on="on" to="/docs">
             <v-icon left>fas fa-book</v-icon>
@@ -18,7 +18,7 @@
           </v-btn>
         </template>
         <span>View the docs</span>
-      </v-tooltip>
+      </v-tooltip> -->
       <v-tooltip bottom>
         <template v-slot:activator="{ on }">
           <v-btn
