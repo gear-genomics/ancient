@@ -108,7 +108,8 @@ export default {
   },
   created() {
     if (this.isCpuBackend) {
-      this.error.message = 'Sorry, your browser does not support WebGL.'
+      this.error.message =
+        'Sorry, your browser does not support GPU computing (WebGL).'
       this.error.show = true
       return
     }
@@ -173,5 +174,3 @@ export default {
   }
 }
 </style>
-
-
