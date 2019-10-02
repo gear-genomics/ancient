@@ -1,10 +1,10 @@
-# ancient-client
+# ancient
 
-> Web client for &#34;ancient: ancestry inference with neural nets&#34;
+> Front end for ancient (ancestry inference with neural nets)
 
 ## Build Setup
 
-``` bash
+```bash
 # install dependencies
 $ npm run install
 
@@ -18,5 +18,3 @@ $ npm run start
 # generate static project
 $ npm run generate
 ```
-
-For detailed explanation on how things work, check out [Nuxt.js docs](https://nuxtjs.org).
