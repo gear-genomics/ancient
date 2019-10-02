@@ -6,9 +6,9 @@
   "private": true,
   "scripts": {
     "dev": "nuxt",
-    "build": "nuxt build",
+    "build": "BASE_URL='/ancient/' nuxt build",
     "start": "nuxt start",
-    "generate": "nuxt generate"
+    "generate": "BASE_URL='/ancient/' nuxt generate"
   },
   "dependencies": {
     "@nuxtjs/pwa": "^3.0.0-0",

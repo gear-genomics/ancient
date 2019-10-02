@@ -49,6 +49,12 @@ export default {
   modules: [
     //'@nuxtjs/pwa'
   ],
+  env: {
+    baseUrl: process.env.BASE_URL || '/'
+  },
+  router: {
+    base: process.env.BASE_URL || '/'
+  },
   /*
    ** vuetify module configuration
    ** https://github.com/nuxt-community/vuetify-module

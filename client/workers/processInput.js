@@ -5,7 +5,9 @@ import * as tf from '@tensorflow/tfjs'
 
 let model
 ;(async () => {
-  model = await tf.loadLayersModel('/tfjs_artifacts/model.json')
+  model = await tf.loadLayersModel(
+    `${process.env.baseUrl}tfjs_artifacts/model.json`
+  )
 })()
 
 const order = 7

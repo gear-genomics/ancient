@@ -2,7 +2,7 @@ import axios from 'axios'
 import pako from 'pako'
 
 async function load() {
-  const snpReq = await axios.get('/snps.txt.gz', {
+  const snpReq = await axios.get(`${process.env.baseUrl}snps.txt.gz`, {
     responseType: 'arraybuffer'
   })
 
