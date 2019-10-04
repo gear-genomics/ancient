@@ -29,6 +29,10 @@ from keras.activations import *
 from keras.callbacks import *
 
 
+###
+# Effnet implementation: github.com/arthurdouillard/keras-effnet
+###
+
 def get_post(x_in):
     x = LeakyReLU()(x_in)
     x = BatchNormalization()(x)

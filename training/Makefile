@@ -22,7 +22,7 @@ list: .tensorflow
 	export PATH=${PBASE}/bin/bin:${PATH} && pip list
 
 clean:
-	rm -f ancestry.pyc
+	rm -rf *.png *.tsv ancestry.pyc ancestry.h5 tfjsmodel/
 
 distclean:
 	rm -rf $(TARGETS) $(TARGETS:=.o) bin/

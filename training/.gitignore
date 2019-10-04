@@ -3,3 +3,7 @@ bin/
 .channels
 .tensorflow
 *~
+*.png
+*.tsv
+ancestry.h5
+tfjsmodel/
