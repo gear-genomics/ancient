@@ -11,3 +11,7 @@ make all
 ```bash
 make ancestry
 ```
+
+## Credits
+
+EffNet implementation [github.com/arthurdouillard/keras-effnet](https://github.com/arthurdouillard/keras-effnet).
