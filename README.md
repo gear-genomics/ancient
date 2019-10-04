@@ -2,4 +2,4 @@
   <img src="ancient.png">
 </p>
 
-> ancient: ancestry inference with neural nets
+> ancient: ancestry inference with convolutional neural networks
