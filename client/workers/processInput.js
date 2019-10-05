@@ -13,7 +13,13 @@ let model
 
 const order = 7
 // TODO possible to store this in model?
-const modelClassNames = ['AFR', 'AMR', 'EAS', 'EUR', 'SAS']
+const modelClassNames = [
+  { value: 'AFR', label: 'Africa' },
+  { value: 'AMR', label: 'America' },
+  { value: 'EAS', label: 'East Asia' },
+  { value: 'EUR', label: 'Europe' },
+  { value: 'SAS', label: 'South Asia' }
+]
 
 addEventListener('message', async event => {
   const { file, snps } = event.data
@@ -132,17 +138,22 @@ addEventListener('message', async event => {
 
       const probs = pred.dataSync()
       const vlSpec = {
+        title: 'Probability of ancestry',
         data: { values: [] },
         mark: 'bar',
         encoding: {
-          y: { field: 'population', type: 'nominal' },
-          x: { field: 'probability', type: 'quantitative' }
+          y: { field: 'population', type: 'nominal', axis: { title: null } },
+          x: {
+            field: 'probability',
+            type: 'quantitative',
+            axis: { title: null }
+          }
         },
         $schema: 'https://vega.github.io/schema/vega-lite/v4.0.0-beta.9.json'
       }
       probs.forEach((prob, i) => {
         vlSpec.data.values.push({
-          population: modelClassNames[i],
+          population: modelClassNames[i].label,
           probability: prob
         })
       })
