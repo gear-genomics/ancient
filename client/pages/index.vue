@@ -14,10 +14,18 @@
         <v-btn
           outlined
           color="primary"
-          @click="run"
+          @click="run(false)"
           :disabled="isLoadingSnps || isProcessingInput || isCpuBackend"
         >
           <v-icon left>fas fa-rocket</v-icon>Run inference
+        </v-btn>
+        <v-btn
+          outlined
+          color="primary"
+          @click="run(true)"
+          :disabled="isLoadingSnps || isProcessingInput || isCpuBackend"
+        >
+          <v-icon left>fas fa-eye</v-icon>Show example
         </v-btn>
       </div>
       <div class="text-center grey--text text--darken-1 mt-4 status-container">
@@ -53,6 +61,8 @@ import * as tf from '@tensorflow/tfjs'
 
 import 'filepond/dist/filepond.min.css'
 
+const EXAMPLE_FILE = 'example.tsv.gz'
+
 const FilePond = vueFilePond()
 
 /*
@@ -82,20 +92,26 @@ export default {
     HilbertCurve
   },
   methods: {
-    run() {
-      const inputFile = this.$refs.upload.getFile()
-      if (!inputFile) {
-        this.error.message = 'Error: please provide an input file.'
-        this.error.show = true
-        return
+    run(isExample = false) {
+      let inputFile
+      if (!isExample) {
+        inputFile = this.$refs.upload.getFile()
+        if (!inputFile) {
+          this.error.message = 'Error: please provide an input file.'
+          this.error.show = true
+          return
+        }
       }
+
       this.error.show = false
       this.results = []
       this.isProcessingInput = true
+
       this.$_processInput.postMessage({
-        file: inputFile.file,
+        file: isExample ? EXAMPLE_FILE : inputFile.file,
         snps: this.snps
       })
+
       this.$_processInput.onmessage = event => {
         const payload = event.data
         if (payload.type === 'result') {

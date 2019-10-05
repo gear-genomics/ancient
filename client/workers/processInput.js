@@ -1,3 +1,4 @@
+import axios from 'axios'
 import * as hilbertCurve from 'hilbert-curve'
 import _ from 'lodash'
 import pako from 'pako'
@@ -14,15 +15,26 @@ const order = 7
 // TODO possible to store this in model?
 const modelClassNames = ['AFR', 'AMR', 'EAS', 'EUR', 'SAS']
 
-addEventListener('message', event => {
+addEventListener('message', async event => {
   const { file, snps } = event.data
+
+  let data
+  if (typeof file === 'string') {
+    const res = await axios.get(`${process.env.baseUrl}${file}`, {
+      responseType: 'blob'
+    })
+    data = res.data
+  } else {
+    data = file
+  }
+
   const reader = new FileReader()
-  const isGzip = file.type === 'application/gzip'
+  const isGzip = data.type === 'application/gzip'
 
   if (isGzip) {
-    reader.readAsArrayBuffer(file)
+    reader.readAsArrayBuffer(data)
   } else {
-    reader.readAsText(file)
+    reader.readAsText(data)
   }
 
   const numSnps = Object.keys(snps.rs).length
