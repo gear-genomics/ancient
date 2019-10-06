@@ -2,24 +2,8 @@ import axios from 'axios'
 import * as hilbertCurve from 'hilbert-curve'
 import _ from 'lodash'
 import pako from 'pako'
-import * as tf from '@tensorflow/tfjs'
-
-let model
-;(async () => {
-  model = await tf.loadLayersModel(
-    `${process.env.baseUrl}tfjs_artifacts/model.json`
-  )
-})()
 
 const order = 7
-// TODO possible to store this in model?
-const modelClassNames = [
-  { value: 'AFR', label: 'Africa' },
-  { value: 'AMR', label: 'America' },
-  { value: 'EAS', label: 'East Asia' },
-  { value: 'EUR', label: 'Europe' },
-  { value: 'SAS', label: 'South Asia' }
-]
 
 addEventListener('message', async event => {
   const { file, snps } = event.data
@@ -130,46 +114,13 @@ addEventListener('message', async event => {
 
       //console.log('grayscale values', _.countBy(grayscaleValues))
 
-      const pred = tf.tidy(() => {
-        const grayscaleValueTensor = tf.tensor1d(grayscaleValues)
-        const xs = tf.reshape(grayscaleValueTensor, [-1, 128, 128, 1])
-        return model.predict(xs)
-      })
-
-      const probs = pred.dataSync()
-      const vlSpec = {
-        title: 'Probability of ancestry',
-        data: { values: [] },
-        mark: 'bar',
-        encoding: {
-          y: { field: 'population', type: 'nominal', axis: { title: null } },
-          x: {
-            field: 'probability',
-            type: 'quantitative',
-            axis: { title: null }
-          }
-        },
-        $schema: 'https://vega.github.io/schema/vega-lite/v4.0.0-beta.9.json'
-      }
-      probs.forEach((prob, i) => {
-        vlSpec.data.values.push({
-          population: modelClassNames[i].label,
-          probability: prob
-        })
-      })
-
-      postMessage({
-        type: 'result',
-        value: {
-          sample,
-          prediction: probs,
-          vlSpec,
-          hilbert: grayscaleValues
-        }
+      results.push({
+        sample,
+        hilbert: grayscaleValues
       })
 
       //console.log(`[  end] processing sample ${sample}`)
     }
-    postMessage({ type: 'EOM', value: null })
+    postMessage(results)
   }
 })

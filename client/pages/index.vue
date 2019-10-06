@@ -72,6 +72,24 @@ const FilePond = vueFilePond()
 tf.scalar(0) // force backend initialization
 const isCpuBackend = tf.getBackend() === 'cpu'
 
+let model
+if (!isCpuBackend) {
+  ;(async () => {
+    model = await tf.loadLayersModel(
+      `${process.env.baseUrl}tfjs_artifacts/model.json`
+    )
+  })()
+}
+
+// TODO possible to store this in model?
+const modelClassNames = [
+  { value: 'AFR', label: 'Africa' },
+  { value: 'AMR', label: 'America' },
+  { value: 'EAS', label: 'East Asia' },
+  { value: 'EUR', label: 'Europe' },
+  { value: 'SAS', label: 'South Asia' }
+]
+
 export default {
   data() {
     return {
@@ -113,12 +131,47 @@ export default {
       })
 
       this.$_processInput.onmessage = event => {
-        const payload = event.data
-        if (payload.type === 'result') {
-          this.results.push(payload.value)
-        } else if (payload.type === 'EOM') {
-          this.isProcessingInput = false
+        const { data } = event
+        this.isProcessingInput = false
+
+        for (const sample of data) {
+          const pred = tf.tidy(() => {
+            const hilbertTensor = tf.tensor1d(sample.hilbert)
+            const xs = tf.reshape(hilbertTensor, [-1, 128, 128, 1])
+            return model.predict(xs)
+          })
+
+          const probs = pred.dataSync()
+          const vlSpec = {
+            title: 'Probability of ancestry',
+            data: { values: [] },
+            mark: 'bar',
+            encoding: {
+              y: {
+                field: 'population',
+                type: 'nominal',
+                axis: { title: null }
+              },
+              x: {
+                field: 'probability',
+                type: 'quantitative',
+                axis: { title: null }
+              }
+            },
+            $schema:
+              'https://vega.github.io/schema/vega-lite/v4.0.0-beta.9.json'
+          }
+          probs.forEach((prob, i) => {
+            vlSpec.data.values.push({
+              population: modelClassNames[i].label,
+              probability: prob
+            })
+          })
+
+          sample.vlSpec = vlSpec
         }
+
+        this.results = data
       }
     }
   },
