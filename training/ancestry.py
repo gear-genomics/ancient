@@ -1,4 +1,3 @@
-from keras import backend as K
 from keras.models import Sequential
 from keras.layers.convolutional import Conv2D
 from keras.layers.convolutional import MaxPooling2D
@@ -24,6 +23,7 @@ from PIL import Image
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 from keras.models import Model
+from keras.models import Sequential
 from keras.layers import *
 from keras.activations import *
 from keras.callbacks import *
@@ -33,56 +33,54 @@ from keras.callbacks import *
 # Effnet implementation: github.com/arthurdouillard/keras-effnet
 ###
 
-def get_post(x_in):
-    x = LeakyReLU()(x_in)
-    x = BatchNormalization()(x)
-    return x
+def Effnet(input_shape, nb_classes):
+    model = Sequential([
+        Conv2D(32, kernel_size=(1, 1), padding='same', use_bias=False, input_shape=input_shape),
+        LeakyReLU(),
+        BatchNormalization(),
+        DepthwiseConv2D(kernel_size=(1, 3), padding='same', use_bias=False),
+        LeakyReLU(),
+        BatchNormalization(),
+        MaxPool2D(pool_size=(2, 1), strides=(2, 1)),
+        DepthwiseConv2D(kernel_size=(3, 1), padding='same', use_bias=False),
+        LeakyReLU(),
+        BatchNormalization(),
+        Conv2D(64, kernel_size=(2, 1), strides=(1, 2), padding='same', use_bias=False),
+        LeakyReLU(),
+        BatchNormalization(),
 
-def get_block(x_in, ch_in, ch_out):
-    x = Conv2D(ch_in,
-               kernel_size=(1, 1),
-               padding='same',
-               use_bias=False)(x_in)
-    x = get_post(x)
+        Conv2D(64, kernel_size=(1, 1), padding='same', use_bias=False),
+        LeakyReLU(),
+        BatchNormalization(),
+        DepthwiseConv2D(kernel_size=(1, 3), padding='same', use_bias=False),
+        LeakyReLU(),
+        BatchNormalization(),
+        MaxPool2D(pool_size=(2, 1), strides=(2, 1)),
+        DepthwiseConv2D(kernel_size=(3, 1), padding='same', use_bias=False),
+        LeakyReLU(),
+        BatchNormalization(),
+        Conv2D(128, kernel_size=(2, 1), strides=(1, 2), padding='same', use_bias=False),
+        LeakyReLU(),
+        BatchNormalization(),
+                   
+        Conv2D(128, kernel_size=(1, 1), padding='same', use_bias=False),
+        LeakyReLU(),
+        BatchNormalization(),
+        DepthwiseConv2D(kernel_size=(1, 3), padding='same', use_bias=False),
+        LeakyReLU(),
+        BatchNormalization(),
+        MaxPool2D(pool_size=(2, 1), strides=(2, 1)),
+        DepthwiseConv2D(kernel_size=(3, 1), padding='same', use_bias=False),
+        LeakyReLU(),
+        BatchNormalization(),
+        Conv2D(256, kernel_size=(2, 1), strides=(1, 2), padding='same', use_bias=False),
+        LeakyReLU(),
+        BatchNormalization(),
 
-    x = DepthwiseConv2D(kernel_size=(1, 3), padding='same', use_bias=False)(x)
-    x = get_post(x)
-    x = MaxPool2D(pool_size=(2, 1),
-                  strides=(2, 1))(x) # Separable pooling
-
-    x = DepthwiseConv2D(kernel_size=(3, 1),
-                        padding='same',
-                        use_bias=False)(x)
-    x = get_post(x)
-
-    x = Conv2D(ch_out,
-               kernel_size=(2, 1),
-               strides=(1, 2),
-               padding='same',
-               use_bias=False)(x)
-    x = get_post(x)
-
-    return x
-
-
-def Effnet(input_shape, nb_classes, include_top=True, weights=None):
-    x_in = Input(shape=input_shape)
-
-    x = get_block(x_in, 32, 64)
-    x = get_block(x, 64, 128)
-    x = get_block(x, 128, 256)
-
-    if include_top:
-        x = Flatten()(x)
-        x = Dense(nb_classes, activation='softmax')(x)
-
-    model = Model(inputs=x_in, outputs=x)
-
-    if weights is not None:
-        model.load_weights(weights, by_name=True)
-
+        Flatten(),
+        Dense(nb_classes, activation='softmax')
+    ])
     return model
-
 
 # TF version
 print(tf.__version__)
@@ -95,7 +93,7 @@ parser.add_argument('-m', '--meta', metavar='meta.info', required=True, dest='me
 args = parser.parse_args()
     
 # Parameters
-epochs = 20
+epochs = 5
 batchsize = 128
 valsplit = 0.1
 verbose = 1
@@ -168,6 +166,7 @@ print(score)
 # Save model
 model.save('ancestry.h5')
 tfjs.converters.save_keras_model(model, 'tfjsmodel')
+
 
 # Evaluate
 plt.clf()
