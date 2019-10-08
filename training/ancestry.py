@@ -1,18 +1,7 @@
-from keras.models import Sequential
-from keras.layers.convolutional import Conv2D
-from keras.layers.convolutional import MaxPooling2D
-from keras.preprocessing.image import ImageDataGenerator
-from keras.layers.core import Activation
-from keras.layers.core import Dropout
-from keras.layers.core import Flatten
-from keras.layers.core import Dense
-from keras.datasets import fashion_mnist
-from keras.optimizers import SGD, RMSprop, Adam
-from keras.utils import np_utils
-from keras.utils import plot_model
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPool2D, Flatten, Dense, LeakyReLU, BatchNormalization, DepthwiseConv2D, MaxPooling2D, Dropout
 from math import sqrt
 import tensorflow as tf
-import tensorflowjs as tfjs
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -20,71 +9,11 @@ import argparse
 import sys
 import collections
 from PIL import Image
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
-from keras.models import Model
-from keras.models import Sequential
-from keras.layers import *
-from keras.activations import *
-from keras.callbacks import *
-
-
-###
-# Effnet implementation: github.com/arthurdouillard/keras-effnet
-###
-
-def Effnet(input_shape, nb_classes):
-    model = Sequential([
-        Conv2D(32, kernel_size=(1, 1), padding='same', use_bias=False, input_shape=input_shape),
-        LeakyReLU(),
-        BatchNormalization(),
-        DepthwiseConv2D(kernel_size=(1, 3), padding='same', use_bias=False),
-        LeakyReLU(),
-        BatchNormalization(),
-        MaxPool2D(pool_size=(2, 1), strides=(2, 1)),
-        DepthwiseConv2D(kernel_size=(3, 1), padding='same', use_bias=False),
-        LeakyReLU(),
-        BatchNormalization(),
-        Conv2D(64, kernel_size=(2, 1), strides=(1, 2), padding='same', use_bias=False),
-        LeakyReLU(),
-        BatchNormalization(),
-
-        Conv2D(64, kernel_size=(1, 1), padding='same', use_bias=False),
-        LeakyReLU(),
-        BatchNormalization(),
-        DepthwiseConv2D(kernel_size=(1, 3), padding='same', use_bias=False),
-        LeakyReLU(),
-        BatchNormalization(),
-        MaxPool2D(pool_size=(2, 1), strides=(2, 1)),
-        DepthwiseConv2D(kernel_size=(3, 1), padding='same', use_bias=False),
-        LeakyReLU(),
-        BatchNormalization(),
-        Conv2D(128, kernel_size=(2, 1), strides=(1, 2), padding='same', use_bias=False),
-        LeakyReLU(),
-        BatchNormalization(),
-                   
-        Conv2D(128, kernel_size=(1, 1), padding='same', use_bias=False),
-        LeakyReLU(),
-        BatchNormalization(),
-        DepthwiseConv2D(kernel_size=(1, 3), padding='same', use_bias=False),
-        LeakyReLU(),
-        BatchNormalization(),
-        MaxPool2D(pool_size=(2, 1), strides=(2, 1)),
-        DepthwiseConv2D(kernel_size=(3, 1), padding='same', use_bias=False),
-        LeakyReLU(),
-        BatchNormalization(),
-        Conv2D(256, kernel_size=(2, 1), strides=(1, 2), padding='same', use_bias=False),
-        LeakyReLU(),
-        BatchNormalization(),
-
-        Flatten(),
-        Dense(nb_classes, activation='softmax')
-    ])
-    return model
 
 # TF version
 print(tf.__version__)
-tf.compat.v1.disable_eager_execution()
+tf.keras.backend.clear_session()
 
 # Parse command line
 parser = argparse.ArgumentParser(description='Deep learning')
@@ -93,10 +22,7 @@ parser.add_argument('-m', '--meta', metavar='meta.info', required=True, dest='me
 args = parser.parse_args()
     
 # Parameters
-epochs = 5
-batchsize = 128
-valsplit = 0.1
-verbose = 1
+epochs = 300
 
 # Load the images and meta information
 df = pd.read_csv(args.images, compression="gzip", sep="\t", header=None)
@@ -127,14 +53,12 @@ testing = testing.drop(columns=[colname, "sample", "population", "study"])
 # Set image dimensions
 imgrows = int(sqrt(df.shape[1]))
 imgcols = int(sqrt(df.shape[1]))
-ish = (imgrows, imgcols, 1)
 X_train = np.array(df).reshape(df.shape[0], imgrows, imgcols, 1)
 X_test = np.array(testing).reshape(testing.shape[0], imgrows, imgcols, 1)
-print(ish, "image shape")
 
 # outcome, y_train
-y_train = np_utils.to_categorical(outcome['population'].cat.codes, num_classes=classes)
-y_test = np_utils.to_categorical(outcomeTest['population'].cat.codes, num_classes=classes)
+y_train = np.array(outcome['population'].cat.codes, dtype=np.uint8)
+y_test = np.array(outcomeTest['population'].cat.codes, dtype=np.uint8)
 print(X_train.shape, ' train images shape')
 print(len(y_train), ' train labels')
 print(X_test.shape, ' test images shape')
@@ -151,22 +75,39 @@ image.save(str(outcomeTest['sample'].iloc[0]) + '.png')
 # Reshape and normalize images
 X_train = X_train.astype('float32')
 X_test = X_test.astype('float32')
+ish = (imgrows, imgcols, 1)
+print(ish, "image shape")
 
 # Model
-model = Effnet(ish, classes)
-model.compile(optimizer=Adam(), loss = 'categorical_crossentropy', metrics=['accuracy'])
+model = Sequential([
+    Conv2D(filters=32, kernel_size=3, strides=3, padding='same', input_shape=ish),
+    MaxPool2D(pool_size=3, padding='same'),
+    Dropout(0.1),
+    Conv2D(filters=64, kernel_size=3, strides=1, padding='same', activation='relu'),
+    MaxPool2D(pool_size=3, padding='same'),
+    Dropout(0.1),
+    Conv2D(filters=128, kernel_size=3, strides=1, padding='same', activation='relu'),
+    MaxPool2D(pool_size=3, padding='same'),
+    Dropout(0.1),
+    Flatten(),
+    Dense(256, activation='relu'),
+    Dropout(0.3),
+    Dense(classes, activation='softmax')
+    ])
+
+# Compile
+#model.compile(optimizer=tf.keras.optimizers.Adam(lr=0.0001), loss = 'sparse_categorical_crossentropy', metrics=['accuracy'])
+model.compile(optimizer='adam', loss = 'sparse_categorical_crossentropy', metrics=['accuracy'])
 print(model.summary())
-plot_model(model, to_file="model.png", show_shapes=True)
+tf.keras.utils.plot_model(model, to_file="model.png", show_shapes=True)
 
 # Run
-history = model.fit(X_train, y_train, batch_size = batchsize, epochs=epochs, verbose=verbose, validation_split=valsplit)
-score = model.evaluate(X_test, y_test, verbose=verbose)
+history = model.fit(X_train, y_train, epochs=epochs, batch_size=128, shuffle=True, validation_data=(X_test, y_test), verbose=1)
+score = model.evaluate(X_test, y_test, verbose=0)
 print(score)
 
 # Save model
 model.save('ancestry.h5')
-tfjs.converters.save_keras_model(model, 'tfjsmodel')
-
 
 # Evaluate
 plt.clf()

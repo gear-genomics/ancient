@@ -12,6 +12,8 @@ make all
 make ancestry
 ```
 
-## Credits
+## Convert the model to tensorflow.js
 
-EffNet implementation [github.com/arthurdouillard/keras-effnet](https://github.com/arthurdouillard/keras-effnet).
+```bash
+tensorflowjs_converter --input_format keras ancestry.h5 tfjsmodel
+```

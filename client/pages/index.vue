@@ -70,7 +70,8 @@ const FilePond = vueFilePond()
   therefore, we have to make sure we are running on a GPU
 */
 tf.scalar(0) // force backend initialization
-const isCpuBackend = tf.getBackend() === 'cpu'
+//const isCpuBackend = tf.getBackend() === 'cpu'
+const isCpuBackend = false
 
 let model
 if (!isCpuBackend) {
