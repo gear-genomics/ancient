@@ -11,6 +11,27 @@ import collections
 from PIL import Image
 from sklearn.metrics import confusion_matrix
 
+
+# Model
+def BaselineModel(input_shape, nb_classes):
+    model = Sequential([
+        Conv2D(filters=32, kernel_size=(3, 1), padding='same', activation='relu', input_shape=input_shape),
+        MaxPool2D(pool_size=(3,1)),
+        Dropout(0.1),
+        Conv2D(filters=32, kernel_size=(1, 3), padding='same', activation='relu'),
+        MaxPool2D(pool_size=(1,3)),
+        Dropout(0.1),
+        Conv2D(filters=64, kernel_size=(3, 1), padding='same', activation='relu'),
+        MaxPool2D(pool_size=(3,1)),
+        Dropout(0.1),
+        Conv2D(filters=64, kernel_size=(1, 3), padding='same', activation='relu'),
+        MaxPool2D(pool_size=(1,3)),
+        Dropout(0.1),
+        Flatten(),
+        Dense(nb_classes, activation='softmax')
+    ])
+    return model
+
 # TF version
 print(tf.__version__)
 tf.keras.backend.clear_session()
@@ -22,7 +43,7 @@ parser.add_argument('-m', '--meta', metavar='meta.info', required=True, dest='me
 args = parser.parse_args()
     
 # Parameters
-epochs = 300
+epochs = 30
 
 # Load the images and meta information
 df = pd.read_csv(args.images, compression="gzip", sep="\t", header=None)
@@ -78,24 +99,9 @@ X_test = X_test.astype('float32')
 ish = (imgrows, imgcols, 1)
 print(ish, "image shape")
 
-# Model
-model = Sequential([
-    Conv2D(filters=32, kernel_size=3, strides=3, padding='same', input_shape=ish),
-    MaxPool2D(pool_size=3, padding='same'),
-    Dropout(0.1),
-    Conv2D(filters=64, kernel_size=3, strides=1, padding='same', activation='relu'),
-    MaxPool2D(pool_size=3, padding='same'),
-    Dropout(0.1),
-    Conv2D(filters=128, kernel_size=3, strides=1, padding='same', activation='relu'),
-    MaxPool2D(pool_size=3, padding='same'),
-    Dropout(0.1),
-    Flatten(),
-    Dense(256, activation='relu'),
-    Dropout(0.3),
-    Dense(classes, activation='softmax')
-    ])
 
-# Compile
+# Model
+model = BaselineModel(ish, classes)
 #model.compile(optimizer=tf.keras.optimizers.Adam(lr=0.0001), loss = 'sparse_categorical_crossentropy', metrics=['accuracy'])
 model.compile(optimizer='adam', loss = 'sparse_categorical_crossentropy', metrics=['accuracy'])
 print(model.summary())
