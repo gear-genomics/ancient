@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "dev": "nuxt",
-    "build": "BASE_URL='/ancient/' nuxt build",
+    "build": "npm run generate",
     "start": "nuxt start",
     "generate": "BASE_URL='/ancient/' nuxt generate"
   },
