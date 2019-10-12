@@ -3,7 +3,6 @@
     <v-alert
       class="mt-4"
       v-model="error.show"
-      :dismissible="!isCpuBackend"
       type="error"
     >{{ error.message }}</v-alert>
     <v-container class="pb-12">
@@ -15,7 +14,7 @@
           outlined
           color="primary"
           @click="run(false)"
-          :disabled="isLoadingSnps || isProcessingInput || isCpuBackend"
+          :disabled="isLoadingSnps || isProcessingInput"
         >
           <v-icon left>fas fa-rocket</v-icon>Run inference
         </v-btn>
@@ -23,7 +22,7 @@
           outlined
           color="primary"
           @click="run(true)"
-          :disabled="isLoadingSnps || isProcessingInput || isCpuBackend"
+          :disabled="isLoadingSnps || isProcessingInput"
         >
           <v-icon left>fas fa-eye</v-icon>Show example
         </v-btn>
@@ -65,22 +64,12 @@ const EXAMPLE_FILE = 'example.tsv.gz'
 
 const FilePond = vueFilePond()
 
-/*
-  `model.predict` currently gives wrong results with a CPU backend
-  therefore, we have to make sure we are running on a GPU
-*/
-tf.scalar(0) // force backend initialization
-//const isCpuBackend = tf.getBackend() === 'cpu'
-const isCpuBackend = false
-
 let model
-if (!isCpuBackend) {
   ;(async () => {
     model = await tf.loadLayersModel(
       `${process.env.baseUrl}tfjs_artifacts/model.json`
     )
   })()
-}
 
 // TODO possible to store this in model?
 const modelClassNames = [
@@ -101,8 +90,7 @@ export default {
       results: [],
       snps: null,
       isLoadingSnps: false,
-      isProcessingInput: false,
-      isCpuBackend
+      isProcessingInput: false
     }
   },
   components: {
@@ -177,13 +165,6 @@ export default {
     }
   },
   created() {
-    if (this.isCpuBackend) {
-      this.error.message =
-        'Sorry, your browser does not support GPU computing (WebGL).'
-      this.error.show = true
-      return
-    }
-
     this.$_processInput = new Worker('@/workers/processInput.js', {
       type: 'module'
     })
