@@ -1,10 +1,6 @@
 <template>
   <div>
-    <v-alert
-      class="mt-4"
-      v-model="error.show"
-      type="error"
-    >{{ error.message }}</v-alert>
+    <v-alert class="mt-4" v-model="error.show" type="error">{{ error.message }}</v-alert>
     <v-container class="pb-12">
       <div class="file-input-container mt-2">
         <FilePond ref="upload" class="file-input"/>
@@ -65,11 +61,11 @@ const EXAMPLE_FILE = 'example.tsv.gz'
 const FilePond = vueFilePond()
 
 let model
-  ;(async () => {
-    model = await tf.loadLayersModel(
-      `${process.env.baseUrl}tfjs_artifacts/model.json`
-    )
-  })()
+;(async () => {
+  model = await tf.loadLayersModel(
+    `${process.env.baseUrl}tfjs_artifacts/model.json`
+  )
+})()
 
 // TODO possible to store this in model?
 const modelClassNames = [

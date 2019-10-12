@@ -43,12 +43,12 @@
       </v-tooltip>
     </v-app-bar>
     <v-content class="pb-12">
-      <nuxt />
+      <nuxt/>
     </v-content>
     <v-footer class="d-flex justify-end align-center pa-4" absolute elevation="2">
       <span>Supported by</span>
       <a href="https://embl.de">
-        <img class="footer-logo ml-1" src="@/assets/embl.svg" alt="EMBL logo" />
+        <img class="footer-logo ml-1" src="@/assets/embl.svg" alt="EMBL logo">
       </a>
     </v-footer>
   </v-app>
