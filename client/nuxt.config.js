@@ -1,4 +1,5 @@
-import colors from 'vuetify/es5/util/colors'
+import pkg from './package.json'
+import CopyPlugin from 'copy-webpack-plugin'
 import WorkerPlugin from 'worker-plugin'
 
 export default {
@@ -73,6 +74,22 @@ export default {
      ** You can extend webpack config here
      */
     extend(config, ctx) {
+      config.module.rules.push({
+        test: /\.(tsv|txt)(\.gz)?$/,
+        loader: 'file-loader',
+        options: {
+          name: '[hash].[name].[ext]'
+        }
+      })
+      config.plugins.push(
+        new CopyPlugin([
+          {
+            from: 'tfjs_artifacts/*',
+            to: `tfjs_artifacts.${pkg.version}/`,
+            flatten: true
+          }
+        ])
+      )
       config.plugins.push(new WorkerPlugin({ globalObject: false }))
     }
   }

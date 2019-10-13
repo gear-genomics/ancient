@@ -10,9 +10,7 @@ addEventListener('message', async event => {
 
   let data
   if (typeof file === 'string') {
-    const res = await axios.get(`${process.env.baseUrl}${file}`, {
-      responseType: 'blob'
-    })
+    const res = await axios.get(file, { responseType: 'blob' })
     data = res.data
   } else {
     data = file

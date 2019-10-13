@@ -49,6 +49,7 @@
 </template>
 
 <script>
+import pkg from '@/package.json'
 import vueFilePond from 'vue-filepond'
 import BarChart from '@/components/BarChart'
 import HilbertCurve from '@/components/HilbertCurve'
@@ -56,16 +57,11 @@ import * as tf from '@tensorflow/tfjs'
 
 import 'filepond/dist/filepond.min.css'
 
-const EXAMPLE_FILE = 'example.tsv.gz'
+import snpsUrl from '@/assets/snps.txt.gz'
+import exampleUrl from '@/assets/example.tsv.gz'
 
 const FilePond = vueFilePond()
-
 let model
-;(async () => {
-  model = await tf.loadLayersModel(
-    `${process.env.baseUrl}tfjs_artifacts/model.json`
-  )
-})()
 
 // TODO possible to store this in model?
 const modelClassNames = [
@@ -111,7 +107,7 @@ export default {
       this.isProcessingInput = true
 
       this.$_processInput.postMessage({
-        file: isExample ? EXAMPLE_FILE : inputFile.file,
+        file: isExample ? exampleUrl : inputFile.file,
         snps: this.snps
       })
 
@@ -160,7 +156,17 @@ export default {
       }
     }
   },
-  created() {
+  async created() {
+    try {
+      model = await tf.loadLayersModel(
+        `${__webpack_public_path__}tfjs_artifacts.${pkg.version}/model.json`
+      )
+    } catch {
+      this.error.message = 'Model failed to load.'
+      this.error.show = true
+      return
+    }
+
     this.$_processInput = new Worker('@/workers/processInput.js', {
       type: 'module'
     })
@@ -172,7 +178,7 @@ export default {
       this.isLoadingSnps = false
     }
     this.isLoadingSnps = true
-    loadSnps.postMessage(null)
+    loadSnps.postMessage({ url: snpsUrl })
   }
 }
 </script>

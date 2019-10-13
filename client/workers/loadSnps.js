@@ -1,8 +1,8 @@
 import axios from 'axios'
 import pako from 'pako'
 
-async function load() {
-  const snpReq = await axios.get(`${process.env.baseUrl}snps.txt.gz`, {
+async function load(url) {
+  const snpReq = await axios.get(url, {
     responseType: 'arraybuffer'
   })
 
@@ -33,7 +33,7 @@ async function load() {
   return snps
 }
 
-addEventListener('message', async () => {
-  const snps = await load()
+addEventListener('message', async event => {
+  const snps = await load(event.data.url)
   postMessage(snps)
 })
