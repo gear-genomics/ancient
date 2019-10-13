@@ -14,21 +14,13 @@
         >
           <v-icon left>fas fa-rocket</v-icon>Run inference
         </v-btn>
-        <!-- <v-btn
+        <v-btn
           outlined
           color="primary"
           @click="run(true)"
           :disabled="isLoadingSnps || isProcessingInput"
         >
           <v-icon left>fas fa-eye</v-icon>Show example
-        </v-btn>-->
-        <v-btn
-          outlined
-          color="primary"
-          :href="exampleUrl"
-          :disabled="isLoadingSnps || isProcessingInput"
-        >
-          <v-icon left>fas fa-download</v-icon>Download example file
         </v-btn>
       </div>
       <div class="text-center grey--text text--darken-1 mt-4 status-container">
@@ -90,8 +82,7 @@ export default {
       results: [],
       snps: null,
       isLoadingSnps: false,
-      isProcessingInput: false,
-      exampleUrl
+      isProcessingInput: false
     }
   },
   components: {

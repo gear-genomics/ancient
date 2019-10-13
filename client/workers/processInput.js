@@ -4,6 +4,7 @@ import _ from 'lodash'
 import pako from 'pako'
 
 const order = 7
+const reGzip = new RegExp('^application/(x-)?gzip$')
 
 addEventListener('message', async event => {
   const { file, snps } = event.data
@@ -17,7 +18,7 @@ addEventListener('message', async event => {
   }
 
   const reader = new FileReader()
-  const isGzip = data.type === 'application/gzip'
+  const isGzip = reGzip.test(data.type)
 
   if (isGzip) {
     reader.readAsArrayBuffer(data)
