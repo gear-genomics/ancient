@@ -13,6 +13,6 @@
     "commander": "^3.0.0",
     "hilbert-curve": "^2.0.0-beta.1",
     "pako": "^1.0.10",
-    "sharp": "^0.23.0"
+    "sharp": "^0.30.5"
   }
 }
