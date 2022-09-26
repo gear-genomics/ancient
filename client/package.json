@@ -11,7 +11,7 @@
     "generate": "BASE_URL='/ancient/' nuxt generate"
   },
   "dependencies": {
-    "@nuxtjs/pwa": "^3.0.0-0",
+    "@nuxtjs/pwa": "^3.3.5",
     "@tensorflow/tfjs": "^1.2.9",
     "axios": "^0.21.2",
     "filepond": "^4.7.2",
