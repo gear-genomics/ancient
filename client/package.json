@@ -21,7 +21,7 @@
     "pako": "^1.0.10",
     "vega": "^5.22.1",
     "vega-embed": "^5.1.3",
-    "vega-lite": "^4.0.0-beta.9",
+    "vega-lite": "^4.17.0",
     "vue-filepond": "^5.1.3"
   },
   "devDependencies": {
