@@ -12,7 +12,7 @@ gast==0.2.2
 google-pasta==0.1.7
 grpcio==1.53.2
 h5py==2.10.0
-idna==2.8
+idna==3.7
 joblib==1.2.0
 Keras-Applications==1.0.8
 Keras-Preprocessing==1.1.0
